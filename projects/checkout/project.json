@@ -1,0 +1,131 @@
+{
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "name": "checkout",
+  "projectType": "application",
+  "generators": {
+    "@schematics/angular:component": {
+      "style": "scss",
+      "standalone": false
+    },
+    "@schematics/angular:directive": {
+      "standalone": false
+    },
+    "@schematics/angular:pipe": {
+      "standalone": false
+    }
+  },
+  "sourceRoot": "projects/checkout/src",
+  "prefix": "app",
+  "targets": {
+    "build": {
+      "executor": "@angular-architects/native-federation:build",
+      "options": {},
+      "configurations": {
+        "production": {
+          "target": "checkout:esbuild:production"
+        },
+        "development": {
+          "target": "checkout:esbuild:development",
+          "dev": true
+        }
+      },
+      "defaultConfiguration": "production"
+    },
+    "serve": {
+      "executor": "@angular-architects/native-federation:build",
+      "options": {
+        "target": "checkout:serve-original:development",
+        "rebuildDelay": 0,
+        "dev": true,
+        "port": 0
+      }
+    },
+    "extract-i18n": {
+      "executor": "@angular-devkit/build-angular:extract-i18n"
+    },
+    "test": {
+      "executor": "@angular-devkit/build-angular:karma",
+      "options": {
+        "polyfills": [
+          "zone.js",
+          "zone.js/testing"
+        ],
+        "tsConfig": "projects/checkout/tsconfig.spec.json",
+        "inlineStyleLanguage": "scss",
+        "assets": [
+          {
+            "glob": "**/*",
+            "input": "projects/checkout/public"
+          }
+        ],
+        "styles": [
+          "projects/checkout/src/styles.scss"
+        ],
+        "scripts": []
+      }
+    },
+    "esbuild": {
+      "executor": "@angular-architects/native-federation:build",
+      "options": {
+        "outputPath": "dist/checkout",
+        "index": "projects/checkout/src/index.html",
+        "browser": "projects/checkout/src/main.ts",
+        "polyfills": [
+          "zone.js",
+          "es-module-shims"
+        ],
+        "tsConfig": "projects/checkout/tsconfig.app.json",
+        "inlineStyleLanguage": "scss",
+        "assets": [
+          {
+            "glob": "**/*",
+            "input": "projects/checkout/public"
+          }
+        ],
+        "styles": [
+          "projects/checkout/src/styles.scss"
+        ],
+        "scripts": []
+      },
+      "configurations": {
+        "production": {
+          "budgets": [
+            {
+              "type": "initial",
+              "maximumWarning": "500kB",
+              "maximumError": "1MB"
+            },
+            {
+              "type": "anyComponentStyle",
+              "maximumWarning": "2kB",
+              "maximumError": "4kB"
+            }
+          ],
+          "outputHashing": "all"
+        },
+        "development": {
+          "optimization": false,
+          "extractLicenses": false,
+          "sourceMap": true
+        }
+      },
+      "defaultConfiguration": "production"
+    },
+    "serve-original": {
+      "executor": "@angular-devkit/build-angular:dev-server",
+      "configurations": {
+        "production": {
+          "buildTarget": "checkout:esbuild:production"
+        },
+        "development": {
+          "buildTarget": "checkout:esbuild:development"
+        }
+      },
+      "defaultConfiguration": "development",
+      "options": {
+        "port": 4205,
+        "buildTarget": "checkout:build"
+      }
+    }
+  }
+}

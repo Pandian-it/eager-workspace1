@@ -1,0 +1,128 @@
+{
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "name": "cart",
+  "projectType": "application",
+  "generators": {
+    "@schematics/angular:component": {
+      "standalone": false
+    },
+    "@schematics/angular:directive": {
+      "standalone": false
+    },
+    "@schematics/angular:pipe": {
+      "standalone": false
+    }
+  },
+  "sourceRoot": "projects/cart/src",
+  "prefix": "app",
+  "targets": {
+    "build": {
+      "executor": "@angular-architects/native-federation:build",
+      "options": {},
+      "configurations": {
+        "production": {
+          "target": "cart:esbuild:production"
+        },
+        "development": {
+          "target": "cart:esbuild:development",
+          "dev": true
+        }
+      },
+      "defaultConfiguration": "production"
+    },
+    "serve": {
+      "executor": "@angular-architects/native-federation:build",
+      "options": {
+        "target": "cart:serve-original:development",
+        "rebuildDelay": 0,
+        "dev": true,
+        "port": 0
+      }
+    },
+    "extract-i18n": {
+      "executor": "@angular-devkit/build-angular:extract-i18n"
+    },
+    "test": {
+      "executor": "@angular-devkit/build-angular:karma",
+      "options": {
+        "polyfills": [
+          "zone.js",
+          "zone.js/testing"
+        ],
+        "tsConfig": "projects/cart/tsconfig.spec.json",
+        "assets": [
+          {
+            "glob": "**/*",
+            "input": "projects/cart/public"
+          }
+        ],
+        "styles": [
+          "projects/cart/src/styles.css"
+        ],
+        "scripts": []
+      }
+    },
+    "esbuild": {
+      "executor": "@angular-architects/native-federation:build",
+      "options": {
+        "outputPath": "dist/cart",
+        "index": "projects/cart/src/index.html",
+        "browser": "projects/cart/src/main.ts",
+        "polyfills": [
+          "zone.js",
+          "es-module-shims"
+        ],
+        "tsConfig": "projects/cart/tsconfig.app.json",
+        "assets": [
+          {
+            "glob": "**/*",
+            "input": "projects/cart/public"
+          }
+        ],
+        "styles": [
+          "projects/cart/src/styles.css"
+        ],
+        "scripts": []
+      },
+      "configurations": {
+        "production": {
+          "budgets": [
+            {
+              "type": "initial",
+              "maximumWarning": "500kB",
+              "maximumError": "1MB"
+            },
+            {
+              "type": "anyComponentStyle",
+              "maximumWarning": "2kB",
+              "maximumError": "4kB"
+            }
+          ],
+          "outputHashing": "all"
+        },
+        "development": {
+          "optimization": false,
+          "extractLicenses": false,
+          "sourceMap": true
+        }
+      },
+      "defaultConfiguration": "production"
+    },
+    "serve-original": {
+      "executor": "@angular-devkit/build-angular:dev-server",
+      "configurations": {
+        "production": {
+          "buildTarget": "cart:esbuild:production"
+        },
+        "development": {
+          "buildTarget": "cart:esbuild:development"
+        }
+      },
+      "defaultConfiguration": "development",
+      "options": {
+        "port": 4204,
+        "buildTarget": "cart:build"
+      }
+    }
+  }
+}
