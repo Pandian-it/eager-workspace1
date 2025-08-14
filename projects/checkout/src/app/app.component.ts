@@ -12,6 +12,7 @@ export class AppComponent {
   version = '';
 
   constructor(private versionService: VersionService) {
+    console.log('packageInfo', packageInfo);
         this.version = this.versionService.getVersion(packageInfo);
    }
 }

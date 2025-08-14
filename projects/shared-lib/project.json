@@ -1,0 +1,37 @@
+{
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "name": "shared-lib",
+  "projectType": "library",
+  "sourceRoot": "projects/shared-lib/src",
+  "prefix": "lib",
+  "targets": {
+    "build": {
+      "executor": "@angular-devkit/build-angular:ng-packagr",
+      "options": {
+        "project": "projects/shared-lib/ng-package.json"
+      },
+      "configurations": {
+        "production": {
+          "tsConfig": "projects/shared-lib/tsconfig.lib.prod.json"
+        },
+        "development": {
+          "tsConfig": "projects/shared-lib/tsconfig.lib.json"
+        }
+      },
+      "defaultConfiguration": "production",
+      "outputs": [
+        "{workspaceRoot}/dist/shared-lib"
+      ]
+    },
+    "test": {
+      "executor": "@angular-devkit/build-angular:karma",
+      "options": {
+        "tsConfig": "projects/shared-lib/tsconfig.spec.json",
+        "polyfills": [
+          "zone.js",
+          "zone.js/testing"
+        ]
+      }
+    }
+  }
+}

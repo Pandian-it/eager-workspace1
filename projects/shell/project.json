@@ -1,0 +1,129 @@
+{
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "name": "shell",
+  "projectType": "application",
+  "generators": {
+    "@schematics/angular:component": {
+      "standalone": false
+    },
+    "@schematics/angular:directive": {
+      "standalone": false
+    },
+    "@schematics/angular:pipe": {
+      "standalone": false
+    }
+  },
+  "sourceRoot": "projects/shell/src",
+  "prefix": "app",
+  "targets": {
+    "build": {
+      "executor": "@angular-architects/native-federation:build",
+      "options": {},
+      "configurations": {
+        "production": {
+          "target": "shell:esbuild:production"
+        },
+        "development": {
+          "target": "shell:esbuild:development",
+          "dev": true
+        }
+      },
+      "defaultConfiguration": "production"
+    },
+    "serve": {
+      "executor": "@angular-architects/native-federation:build",
+      "options": {
+        "target": "shell:serve-original:development",
+        "rebuildDelay": 0,
+        "dev": true,
+        "port": 0
+      }
+    },
+    "extract-i18n": {
+      "executor": "@angular-devkit/build-angular:extract-i18n"
+    },
+    "test": {
+      "executor": "@angular-devkit/build-angular:karma",
+      "options": {
+        "polyfills": [
+          "zone.js",
+          "zone.js/testing"
+        ],
+        "tsConfig": "projects/shell/tsconfig.spec.json",
+        "assets": [
+          {
+            "glob": "**/*",
+            "input": "projects/shell/public"
+          }
+        ],
+        "styles": [
+          "projects/shell/src/styles.css"
+        ],
+        "scripts": []
+      }
+    },
+    "esbuild": {
+      "executor": "@angular-architects/native-federation:build",
+      "options": {
+        "namedChunks": true,
+        "outputPath": "dist/shell",
+        "index": "projects/shell/src/index.html",
+        "polyfills": [
+          "zone.js",
+          "es-module-shims"
+        ],
+        "tsConfig": "projects/shell/tsconfig.app.json",
+        "assets": [
+          {
+            "glob": "**/*",
+            "input": "projects/shell/public"
+          }
+        ],
+        "styles": [
+          "projects/shell/src/styles.css"
+        ],
+        "scripts": [],
+        "browser": "projects/shell/src/main.ts"
+      },
+      "configurations": {
+        "production": {
+          "budgets": [
+            {
+              "type": "initial",
+              "maximumWarning": "500kB",
+              "maximumError": "1MB"
+            },
+            {
+              "type": "anyComponentStyle",
+              "maximumWarning": "2kB",
+              "maximumError": "4kB"
+            }
+          ],
+          "outputHashing": "all"
+        },
+        "development": {
+          "optimization": false,
+          "extractLicenses": false,
+          "sourceMap": true
+        }
+      },
+      "defaultConfiguration": "production"
+    },
+    "serve-original": {
+      "executor": "@angular-devkit/build-angular:dev-server",
+      "options": {
+        "port": 4201,
+        "buildTarget": "shell:build"
+      },
+      "configurations": {
+        "production": {
+          "buildTarget": "shell:esbuild:production"
+        },
+        "development": {
+          "buildTarget": "shell:esbuild:development"
+        }
+      },
+      "defaultConfiguration": "production"
+    }
+  }
+}
