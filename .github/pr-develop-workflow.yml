@@ -1,0 +1,80 @@
+name: PR Workflow
+
+on:
+  pull_request:
+    branches:
+      - develop
+
+jobs:
+  pr-build-changeset:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.head_ref }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Get affected projects
+        id: affected
+        run: |
+          AFFECTED_PROJECTS=$(nx show projects --affected --base=origin/develop --head=HEAD --plain)
+          echo "NX_AFFECTED=$AFFECTED_PROJECTS" >> $GITHUB_ENV
+
+      - name: Add automated changeset
+        run: |
+          # Create a temp file for programmatic changeset
+          mkdir -p .changeset
+          echo "$NX_AFFECTED" | tr ' ' '\n' > affected.txt
+
+          node <<'JS'
+          const fs = require('fs');
+          const path = require('path');
+          const { add } = require('@changesets/cli');
+
+          const affected = fs.readFileSync('affected.txt', 'utf-8').split('\n').filter(Boolean);
+
+          if (affected.length === 0) {
+            console.log("No affected projects; skipping changeset creation.");
+            process.exit(0);
+          }
+
+          const changesetSummary = "Auto-generated patch for affected projects";
+
+          const changeset = {
+            releases: affected.map(name => ({ name, type: "patch" })),
+            summary: changesetSummary
+          };
+
+          // Generate a unique filename
+          const filename = path.join('.changeset', `${Date.now()}-auto.md`);
+          const content = [
+            '---',
+            changeset.releases.map(r => `"${r.name}": ${r.type}`).join('\n'),
+            '---',
+            '',
+            changeset.summary
+          ].join('\n');
+
+          fs.writeFileSync(filename, content);
+          console.log(`Created changeset: ${filename}`);
+          JS
+
+      - name: Commit and push changeset
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .changeset/*.md
+          git commit -m "chore: auto-generated patch changeset for affected projects" || echo "No changes to commit"
+          git push origin HEAD
+
+      - name: Build affected projects
+        run: |
+          nx affected --target=build --base=origin/develop --head=HEAD
