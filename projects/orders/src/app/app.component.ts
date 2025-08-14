@@ -14,7 +14,7 @@ export class AppComponent {
         this.version = this.versionService.getVersion(packageInfo);
    }
   ngOnInit(): void {
-    // Code here runs when the component is initialized
+    //// Code here runs when the component is initialized
    /* console.log('before Shared Library Data:', this.sharedLibService.num);
     this.sharedLibService.num++;
     this.num = this.sharedLibService.num;
