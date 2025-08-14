@@ -15,6 +15,7 @@ jobs:
         with:
           ref: ${{ github.head_ref }}
           fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       # 2. Fetch the target branch (develop)
       - name: Fetch develop branch
@@ -70,14 +71,14 @@ jobs:
 
           echo "Created changeset: $FILENAME"
 
-      # 7. Commit and push the changeset back to the PR branch
+      # 7. Commit and push the changeset back to the PR branch using GITHUB_TOKEN
       - name: Commit and push changeset
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add .changeset/*.md
           git commit -m "chore: auto-generated patch changeset for affected projects" || echo "No changes to commit"
-          git push origin HEAD
+          git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }} HEAD
 
       # 8. Build only affected projects
       - name: Build affected projects
