@@ -25,7 +25,7 @@ jobs:
       - name: Get affected projects
         id: affected
         run: |
-          AFFECTED_PROJECTS=$(nx show projects --affected --base=origin/develop --head=HEAD --plain)
+          AFFECTED_PROJECTS=$(npx nx show projects --affected --base=origin/develop --head=HEAD --plain)
           echo "NX_AFFECTED=$AFFECTED_PROJECTS" >> $GITHUB_ENV
 
       - name: Add automated changeset
