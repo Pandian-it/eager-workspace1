@@ -1,6 +1,9 @@
 {
   "name": "eager-workspace",
   "version": "0.0.0",
+  "workspaces": [
+    "projects/*"
+  ],
   "scripts": {
     "ng": "ng",
     "start": "nx serve shell",
@@ -40,6 +43,8 @@
     "@angular-devkit/schematics": "18.2.13",
     "@angular/cli": "18.2.13",
     "@angular/compiler-cli": "18.2.13",
+    "@changesets/changelog-github": "^0.5.1",
+    "@changesets/cli": "^2.29.5",
     "@nx/angular": "21.3.11",
     "@nx/workspace": "21.3.11",
     "@schematics/angular": "18.2.13",
