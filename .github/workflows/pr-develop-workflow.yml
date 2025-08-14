@@ -16,7 +16,7 @@ jobs:
           ref: ${{ github.head_ref }}
           fetch-depth: 0
 
-      # 2. Fetch the target branch (develop) to compare
+      # 2. Fetch the target branch (develop)
       - name: Fetch develop branch
         run: git fetch origin develop
 
@@ -30,16 +30,19 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      # 5. Detect affected projects
+      # 5. Detect affected projects (safe for GitHub Actions env)
       - name: Get affected projects
         id: affected
         run: |
           BASE=$(git merge-base origin/develop HEAD)
           echo "BASE=$BASE" >> $GITHUB_ENV
-          AFFECTED_PROJECTS=$(npx nx show projects --affected --base=$BASE --head=HEAD --plain)
-          echo "NX_AFFECTED=$AFFECTED_PROJECTS" >> $GITHUB_ENV
 
-      # 6. Add automated changeset for all affected projects
+          # Get affected projects as comma-separated string
+          AFFECTED_PROJECTS=$(npx nx show projects --affected --base=$BASE --head=HEAD --plain | tr '\n' ',' | sed 's/,$//')
+          echo "NX_AFFECTED=$AFFECTED_PROJECTS" >> $GITHUB_ENV
+          echo "Affected projects: $AFFECTED_PROJECTS"
+
+      # 6. Add automated patch changeset for all affected projects
       - name: Add automated changeset
         run: |
           if [ -z "$NX_AFFECTED" ]; then
@@ -48,28 +51,24 @@ jobs:
           fi
 
           mkdir -p .changeset
-          echo "$NX_AFFECTED" | tr ' ' '\n' > affected.txt
 
-          node <<'JS'
-          const fs = require('fs');
-          const path = require('path');
-          const affected = fs.readFileSync('affected.txt', 'utf-8').split('\n').filter(Boolean);
+          IFS=',' read -r -a PROJECTS <<< "$NX_AFFECTED"
 
-          if (affected.length === 0) process.exit(0);
+          SUMMARY="Auto-generated patch for affected projects"
 
-          const summary = "Auto-generated patch for affected projects";
-          const filename = path.join('.changeset', `${Date.now()}-auto.md`);
-          const content = [
-            '---',
-            affected.map(p => `"${p}": patch`).join('\n'),
-            '---',
-            '',
-            summary
-          ].join('\n');
+          FILENAME=".changeset/$(date +%s)-auto.md"
 
-          fs.writeFileSync(filename, content);
-          console.log(`Created changeset: ${filename}`);
-          JS
+          {
+            echo "---"
+            for proj in "${PROJECTS[@]}"; do
+              echo "\"$proj\": patch"
+            done
+            echo "---"
+            echo ""
+            echo "$SUMMARY"
+          } > "$FILENAME"
+
+          echo "Created changeset: $FILENAME"
 
       # 7. Commit and push the changeset back to the PR branch
       - name: Commit and push changeset
