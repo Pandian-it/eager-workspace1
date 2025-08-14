@@ -14,7 +14,7 @@ export class AppComponent {
     // You can use the shared library service here if needed
     // For example, you can access a property or method from the service
    // this.title = sharedLibService.num; // Assuming num is a property in SharedLibService
-   /// console.log('Shared Library Data:', this.title);
+   //console.log('Shared Library Data:', this.title);
      this.version = this.versionService.getVersion(packageInfo);
   }
   ngOnInit(): void {
