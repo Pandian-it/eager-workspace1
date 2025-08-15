@@ -1,0 +1,85 @@
+name: PR Workflow
+
+on:
+  pull_request:
+    branches:
+      - develop
+
+jobs:
+  pr-build-changeset:
+    runs-on: ubuntu-latest
+    steps:
+      # 1. Checkout the PR branch with full history
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      # 2. Fetch the target branch (develop)
+      - name: Fetch develop branch
+        run: git fetch origin develop
+
+      # 3. Setup Node.js
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20
+
+      # 4. Install dependencies
+      - name: Install dependencies
+        run: npm install
+
+      # 5. Detect affected projects (safe for GitHub Actions env)
+      - name: Get affected projects
+        id: affected
+        run: |
+          BASE=$(git merge-base origin/develop HEAD)
+          echo "BASE=$BASE" >> $GITHUB_ENV
+
+          # Get affected projects as comma-separated string
+          AFFECTED_PROJECTS=$(npx nx show projects --affected --base=$BASE --head=HEAD --plain | tr '\n' ',' | sed 's/,$//')
+          echo "NX_AFFECTED=$AFFECTED_PROJECTS" >> $GITHUB_ENV
+          echo "Affected projects: $AFFECTED_PROJECTS"
+
+      # 6. Add automated patch changeset for all affected projects
+      - name: Add automated changeset
+        run: |
+          if [ -z "$NX_AFFECTED" ]; then
+            echo "No affected projects; skipping changeset."
+            exit 0
+          fi
+
+          mkdir -p .changeset
+
+          IFS=',' read -r -a PROJECTS <<< "$NX_AFFECTED"
+
+          SUMMARY="Auto-generated patch for affected projects"
+
+          FILENAME=".changeset/$(date +%s)-auto.md"
+
+          {
+            echo "---"
+            for proj in "${PROJECTS[@]}"; do
+              echo "\"$proj\": patch"
+            done
+            echo "---"
+            echo ""
+            echo "$SUMMARY"
+          } > "$FILENAME"
+
+          echo "Created changeset: $FILENAME"
+
+      # 7. Commit and push the changeset back to the PR branch using GITHUB_TOKEN
+      - name: Commit and push changeset
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .changeset/*.md
+          git commit -m "chore: auto-generated patch changeset for affected projects" || echo "No changes to commit"
+          git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }} HEAD
+
+      # 8. Build only affected projects
+      - name: Build affected projects
+        run: npx nx affected --target=build --base=$BASE --head=HEAD

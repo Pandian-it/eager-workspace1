@@ -18,7 +18,7 @@
         "projects/shared-lib/src/public-api"
       ],
       "@shared-ui": [
-        "projects/shared-ui/src/public-api"
+        "projects/shared-ui/src/public-api.ts"
       ]
     },
     ///"preserveSymlinks": true,
