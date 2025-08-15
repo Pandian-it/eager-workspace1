@@ -47,9 +47,8 @@ jobs:
         if: steps.affected.outputs.affected != ''
         run: |
           for project in ${{ steps.affected.outputs.affected }}; do
-            echo "---
-\"$project\": patch
----" | npx changeset add --empty
+            echo "---\"$project\": patch---" | 
+            npx changeset add --empty
           done
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
