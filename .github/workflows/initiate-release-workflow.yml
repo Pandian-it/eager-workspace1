@@ -21,38 +21,40 @@ jobs:
           ref: develop
           fetch-depth: 0
 
-      # 2. Setup Node.js
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 18
-          cache: npm
 
-      # 3. Install dependencies
-      - name: Install dependencies
-        run: npm install
-
-      # 4. Create release branch from develop
+      # 2. Create release branch from develop
       - name: Create release branch
         run: |
           git checkout -b ${{ github.event.inputs.release_branch }}
           git push origin ${{ github.event.inputs.release_branch }}
 
-      # 4b. Checkout release branch explicitly for changesets/action
+      # 3. Checkout release branch explicitly for changesets/action
       - name: Checkout release branch for changesets
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.inputs.release_branch }}
           fetch-depth: 0
 
-      # 5. Detect affected projects vs main
+      # 4. Setup Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: npm
+
+      # 5. Install dependencies
+      - name: Install dependencies
+        run: npm install
+
+
+      # 6. Detect affected projects vs main
       - name: Get affected projects
         id: affected
         run: |
           AFFECTED=$(npx nx show projects --affected --base=origin/main --head=HEAD --plain || true)
           echo "affected=$AFFECTED" >> $GITHUB_OUTPUT
 
-      # 6. Add a changeset for affected projects (always patch bump)
+      # 7. Add a changeset for affected projects (always patch bump)
       - name: Add changeset
         if: steps.affected.outputs.affected != ''
         run: |
@@ -64,7 +66,7 @@ jobs:
           git add .changeset
           git commit -m "ci: add changeset for affected projects" || echo "No changeset added"
 
-      # 7. Check if there are pending commits before running changesets/action
+      # 8. Check if there are pending commits before running changesets/action
       - name: Check for pending changeset commits
         id: pending
         run: |
@@ -73,7 +75,7 @@ jobs:
           COUNT=$(git rev-list --count origin/${{ github.event.inputs.release_branch }}..HEAD)
           echo "pending=$COUNT" >> $GITHUB_ENV
 
-      # 8. Run changesets/action to bump versions & open PR if there are pending commits
+      # 9. Run changesets/action to bump versions & open PR if there are pending commits
       - name: Version packages and open PR
         if: env.pending != '0'
         uses: changesets/action@v1
