@@ -10,6 +10,9 @@ on:
 jobs:
   create-release-branch:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
       # 1. Checkout develop (base branch for release)
       - name: Checkout develop
@@ -35,6 +38,13 @@ jobs:
           git checkout -b ${{ github.event.inputs.release_branch }}
           git push origin ${{ github.event.inputs.release_branch }}
 
+      # 4b. Checkout release branch explicitly for changesets/action
+      - name: Checkout release branch for changesets
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.release_branch }}
+          fetch-depth: 0
+
       # 5. Detect affected projects vs main
       - name: Get affected projects
         id: affected
@@ -47,16 +57,25 @@ jobs:
         if: steps.affected.outputs.affected != ''
         run: |
           for project in ${{ steps.affected.outputs.affected }}; do
-            echo "---\"$project\": patch---" | 
-            npx changeset add --empty
+            echo "---\"$project\": patch---" | npx changeset add --empty
           done
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add .changeset
           git commit -m "ci: add changeset for affected projects" || echo "No changeset added"
 
-      # 7. Run changesets/action to bump versions & open PR
+      # 7. Check if there are pending commits before running changesets/action
+      - name: Check for pending changeset commits
+        id: pending
+        run: |
+          git fetch origin
+          git rev-list --count origin/${{ github.event.inputs.release_branch }}..HEAD
+          COUNT=$(git rev-list --count origin/${{ github.event.inputs.release_branch }}..HEAD)
+          echo "pending=$COUNT" >> $GITHUB_ENV
+
+      # 8. Run changesets/action to bump versions & open PR if there are pending commits
       - name: Version packages and open PR
+        if: env.pending != '0'
         uses: changesets/action@v1
         with:
           version: true
