@@ -70,7 +70,7 @@ jobs:
           echo "{" > $MANIFEST_FILE
           COUNT=0
 
-          PROJECTS=$(jq -r '.projects | keys[]' angular.json)
+          PROJECTS=$(npx nx show projects --plain)
 
           for proj in $PROJECTS; do
             VERSION=$(node -p "require('./$proj/package.json').version")
