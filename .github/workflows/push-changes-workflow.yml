@@ -1,0 +1,114 @@
+name: Release Push Workflow
+
+on:
+  push:
+    branches:
+      - "release/*"
+
+jobs:
+  release-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Checkout
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      # 2. Detect commit author
+      - name: Detect commit author
+        id: author
+        run: |
+          AUTHOR=$(git log -1 --pretty=format:'%an')
+          echo "AUTHOR=$AUTHOR" >> $GITHUB_ENV
+          echo "Commit author: $AUTHOR"
+
+      # 3. Extract release version from branch name
+      - name: Extract release version
+        run: |
+          BRANCH_NAME=${GITHUB_REF##*/}
+          RELEASE_VERSION=${BRANCH_NAME#release/}
+          echo "RELEASE_VERSION=$RELEASE_VERSION" >> $GITHUB_ENV
+          echo "Release version from branch: $RELEASE_VERSION"
+
+      # 4. Setup Node
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20
+
+      # 5. Install dependencies
+      - name: Install dependencies
+        run: npm install
+
+      # -------------------
+      # Detect affected apps
+      # -------------------
+      - name: Detect affected apps
+        id: affected
+        run: |
+          echo "Detecting affected apps..."
+          AFFECTED=$(npx nx show projects --affected --base=origin/main --head=HEAD --plain)
+          echo "AFFECTED=$AFFECTED" >> $GITHUB_ENV
+          echo "Affected apps: $AFFECTED"
+
+      # -------------------
+      # CASE B: Developer commit → Run changeset action + generate/update manifest
+      # -------------------
+      - name: Run changeset action
+        if: "!contains(env.AUTHOR, 'github-actions[bot]') && env.AFFECTED != ''"
+        uses: changesets/action@v1
+        with:
+          version: true
+          publish: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate/update manifest (developer PR)
+        if: "!contains(env.AUTHOR, 'github-actions[bot]') && env.AFFECTED != ''"
+        run: |
+          MANIFEST_FILE="deployment-manifest.json"
+          echo "{" > $MANIFEST_FILE
+          COUNT=0
+          for app in $AFFECTED; do
+            VERSION=$(node -p "require('./apps/$app/package.json').version")
+            if [ $COUNT -gt 0 ]; then
+              echo "," >> $MANIFEST_FILE
+            fi
+            echo "  \"$app\": \"$VERSION\"" >> $MANIFEST_FILE
+            COUNT=$((COUNT+1))
+          done
+          echo "}" >> $MANIFEST_FILE
+          cat $MANIFEST_FILE
+
+          # Commit and push manifest
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add $MANIFEST_FILE
+          git commit -m "ci: update deployment manifest" || echo "No changes to commit"
+          git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }} HEAD
+
+      # -------------------
+      # CASE A: Bot commit → Build, Deploy apps & manifest
+      # -------------------
+      - name: Build affected apps
+        if: contains(env.AUTHOR, 'github-actions[bot]') && env.AFFECTED != ''
+        run: |
+          for app in $AFFECTED; do
+            echo "Building $app..."
+            npx nx build $app
+          done
+
+      - name: Deploy affected apps to S3
+        if: contains(env.AUTHOR, 'github-actions[bot]') && env.AFFECTED != ''
+        run: |
+          # Deploy each app to its package.json version folder
+          for app in $AFFECTED; do
+            APP_VERSION=$(node -p "require('./apps/$app/package.json').version")
+            echo "Deploying $app@$APP_VERSION to S3"
+            aws s3 sync dist/apps/$app s3://my-release-bucket/$app/$APP_VERSION --delete
+          done
+
+          # Deploy manifest file to release-version folder
+          aws s3 cp deployment-manifest.json s3://my-release-bucket/manifest/${RELEASE_VERSION}/deployment-manifest.json --acl public-read
