@@ -10,6 +10,9 @@ on:
 jobs:
   create-release-branch:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
       # 1. Checkout develop (base branch for release)
       - name: Checkout develop
@@ -18,48 +21,70 @@ jobs:
           ref: develop
           fetch-depth: 0
 
-      # 2. Setup Node.js
+
+      # 2. Create release branch from develop
+      - name: Create release branch
+        run: |
+          git checkout -b ${{ github.event.inputs.release_branch }}
+          git push origin ${{ github.event.inputs.release_branch }}
+
+      # 3. Checkout release branch explicitly for changesets/action
+      - name: Checkout release branch for changesets
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.release_branch }}
+          fetch-depth: 0
+
+      # 4. Setup Node.js
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 18
           cache: npm
 
-      # 3. Install dependencies
+      # 5. Install dependencies
       - name: Install dependencies
         run: npm install
 
-      # 4. Create release branch from develop
-      - name: Create release branch
-        run: |
-          git checkout -b ${{ github.event.inputs.release_branch }}
-          git push origin ${{ github.event.inputs.release_branch }}
 
-      # 5. Detect affected projects vs main
+      # 6. Detect affected projects vs main
       - name: Get affected projects
         id: affected
         run: |
           AFFECTED=$(npx nx show projects --affected --base=origin/main --head=HEAD --plain || true)
           echo "affected=$AFFECTED" >> $GITHUB_OUTPUT
 
-      # 6. Add a changeset for affected projects (always patch bump)
+      # 7. Add a changeset for affected projects (always patch bump)
       - name: Add changeset
         if: steps.affected.outputs.affected != ''
         run: |
           for project in ${{ steps.affected.outputs.affected }}; do
-            echo "---\"$project\": patch---" | 
-            npx changeset add --empty
+            echo "---\"$project\": patch---" | npx changeset add --empty
           done
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add .changeset
           git commit -m "ci: add changeset for affected projects" || echo "No changeset added"
 
-      # 7. Run changesets/action to bump versions & open PR
+      # 8. Check if there are pending commits before running changesets/action
+      - name: Check for pending changeset commits
+        id: pending
+        run: |
+          git fetch origin
+          git rev-list --count origin/${{ github.event.inputs.release_branch }}..HEAD
+          COUNT=$(git rev-list --count origin/${{ github.event.inputs.release_branch }}..HEAD)
+          echo "pending=$COUNT" >> $GITHUB_ENV
+
+      # 9. Run changesets/action to bump versions & open PR if there are pending commits
       - name: Version packages and open PR
+        if: env.pending != '0'
         uses: changesets/action@v1
         with:
           version: true
           publish: false
+          commit: "chore: version packages"
+          title: "Version Packages"
+          body: "This PR bumps package versions and updates changelogs based on the changesets"
+            
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
