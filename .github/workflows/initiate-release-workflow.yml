@@ -75,24 +75,33 @@ jobs:
       # 9. Generate/update deployment manifest in the version branch
       - name: Generate/update deployment manifest
         run: |
-          RELEASE_VERSION="${{ github.event.inputs.release_branch##*/ }}"
+          RELEASE_BRANCH="${{ github.event.inputs.release_branch }}"
+          RELEASE_VERSION="${RELEASE_BRANCH##*/}"   # e.g. release/13.2.4 → 13.2.4
           MANIFEST_FILE="deployment-manifest.json"
 
-          echo "{" > $MANIFEST_FILE
-          COUNT=0
+          # Collect affected projects (vs main)
+          AFFECTED=$(npx nx show projects --affected --base=origin/main --head=HEAD --plain || true)
 
+          JSON_ENTRIES="{}"
           PROJECTS=$(npx nx show projects --plain)
 
           for proj in $PROJECTS; do
             VERSION=$(node -p "require('./projects/$proj/package.json').version")
-            if [ $COUNT -gt 0 ]; then
-              echo "," >> $MANIFEST_FILE
+
+            if echo "$AFFECTED" | grep -qw "$proj"; then
+              RELEASE="$RELEASE_VERSION"
+            else
+              RELEASE=""
             fi
-            echo "  \"$proj\": {\"version\": \"$VERSION\", \"release\": \"$RELEASE_VERSION\"}" >> $MANIFEST_FILE
-            COUNT=$((COUNT+1))
+
+            JSON_ENTRIES=$(echo "$JSON_ENTRIES" | jq \
+              --arg proj "$proj" \
+              --arg version "$VERSION" \
+              --arg release "$RELEASE" \
+              '. + {($proj): {version: $version, release: $release}}')
           done
 
-          echo "}" >> $MANIFEST_FILE
+          echo "$JSON_ENTRIES" | jq '.' > $MANIFEST_FILE
           cat $MANIFEST_FILE
 
           git config user.name "github-actions[bot]"
