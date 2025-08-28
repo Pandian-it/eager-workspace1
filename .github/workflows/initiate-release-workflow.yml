@@ -48,8 +48,17 @@ jobs:
       # 6. Override changeset baseBranch to release branch
       - name: Override changeset baseBranch
         run: |
-          jq '.baseBranch = env.RELEASE_BRANCH' .changeset/config.json > tmp.json
+          echo "Current changeset config:"
+          cat .changeset/config.json
+          echo ""
+          echo "Setting baseBranch to: $RELEASE_BRANCH"
+          
+          # Update baseBranch to the release branch
+          jq --arg branch "$RELEASE_BRANCH" '.baseBranch = $branch' .changeset/config.json > tmp.json
           mv tmp.json .changeset/config.json
+          
+          echo "Updated changeset config:"
+          cat .changeset/config.json
         env:
           RELEASE_BRANCH: ${{ github.event.inputs.release_branch }}
 
@@ -82,26 +91,31 @@ jobs:
           # Collect affected projects (vs main)
           AFFECTED=$(npx nx show projects --affected --base=origin/main --head=HEAD --plain || true)
 
-          JSON_ENTRIES="{}"
+          # Initialize JSON object
+          echo "{}" > $MANIFEST_FILE
+          
           PROJECTS=$(npx nx show projects --plain)
 
           for proj in $PROJECTS; do
-            VERSION=$(node -p "require('./projects/$proj/package.json').version")
+            if [ -f "./projects/$proj/package.json" ]; then
+              VERSION=$(node -p "require('./projects/$proj/package.json').version" 2>/dev/null || echo "0.0.0")
+              
+              if echo "$AFFECTED" | grep -qw "$proj"; then
+                RELEASE="$RELEASE_VERSION"
+              else
+                RELEASE=""
+              fi
 
-            if echo "$AFFECTED" | grep -qw "$proj"; then
-              RELEASE="$RELEASE_VERSION"
+              # Add project to manifest using jq
+              jq --arg proj "$proj" --arg version "$VERSION" --arg release "$RELEASE" \
+                '. + {($proj): {version: $version, release: $release}}' \
+                $MANIFEST_FILE > tmp.json && mv tmp.json $MANIFEST_FILE
             else
-              RELEASE=""
+              echo "Warning: package.json not found for project $proj"
             fi
-
-            JSON_ENTRIES=$(echo "$JSON_ENTRIES" | jq \
-              --arg proj "$proj" \
-              --arg version "$VERSION" \
-              --arg release "$RELEASE" \
-              '. + {($proj): {version: $version, release: $release}}')
           done
 
-          echo "$JSON_ENTRIES" | jq '.' > $MANIFEST_FILE
+          echo "Generated deployment manifest:"
           cat $MANIFEST_FILE
 
           git config user.name "github-actions[bot]"
