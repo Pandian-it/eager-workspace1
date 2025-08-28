@@ -42,10 +42,8 @@ jobs:
         env:
           RELEASE_BRANCH: ${{ github.event.inputs.release_branch }}
 
-
       # 5. Run changesets/action to bump versions & open PR
       - name: Version packages and open PR
-        if: steps.affected.outputs.affected != ''
         uses: changesets/action@v1
         with:
           version: true
@@ -55,3 +53,39 @@ jobs:
           body: "This PR bumps package versions and updates changelogs based on the changesets"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # 6. Checkout the version branch created by changesets/action
+      - name: Checkout version branch
+        run: |
+          VERSION_BRANCH="changeset-${{ github.event.inputs.release_branch }}"
+          git fetch origin $VERSION_BRANCH:$VERSION_BRANCH
+          git checkout $VERSION_BRANCH
+
+      # 7. Generate/update deployment manifest in the version branch
+      - name: Generate/update deployment manifest
+        run: |
+          RELEASE_VERSION="${{ github.event.inputs.release_branch##*/ }}"
+          MANIFEST_FILE="deployment-manifest.json"
+
+          echo "{" > $MANIFEST_FILE
+          COUNT=0
+
+          PROJECTS=$(jq -r '.projects | keys[]' angular.json)
+
+          for proj in $PROJECTS; do
+            VERSION=$(node -p "require('./$proj/package.json').version")
+            if [ $COUNT -gt 0 ]; then
+              echo "," >> $MANIFEST_FILE
+            fi
+            echo "  \"$proj\": {\"version\": \"$VERSION\", \"release\": \"$RELEASE_VERSION\"}" >> $MANIFEST_FILE
+            COUNT=$((COUNT+1))
+          done
+
+          echo "}" >> $MANIFEST_FILE
+          cat $MANIFEST_FILE
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add $MANIFEST_FILE
+          git commit -m "ci: update deployment manifest" || echo "No changes to commit"
+          git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }} HEAD
