@@ -34,7 +34,18 @@ jobs:
           ref: ${{ github.event.inputs.release_branch }}
           fetch-depth: 0
 
-      # 4. Override changeset baseBranch to release branch
+      # 4. Setup Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: npm
+
+      # 5. Install dependencies
+      - name: Install dependencies
+        run: npm install
+
+      # 6. Override changeset baseBranch to release branch
       - name: Override changeset baseBranch
         run: |
           jq '.baseBranch = env.RELEASE_BRANCH' .changeset/config.json > tmp.json
@@ -42,7 +53,7 @@ jobs:
         env:
           RELEASE_BRANCH: ${{ github.event.inputs.release_branch }}
 
-      # 5. Run changesets/action to bump versions & open PR
+      # 7. Run changesets/action to bump versions & open PR
       - name: Version packages and open PR
         uses: changesets/action@v1
         with:
@@ -54,14 +65,14 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # 6. Checkout the version branch created by changesets/action
+      # 8. Checkout the version branch created by changesets/action
       - name: Checkout version branch
         run: |
           VERSION_BRANCH="changeset-${{ github.event.inputs.release_branch }}"
           git fetch origin $VERSION_BRANCH:$VERSION_BRANCH
           git checkout $VERSION_BRANCH
 
-      # 7. Generate/update deployment manifest in the version branch
+      # 9. Generate/update deployment manifest in the version branch
       - name: Generate/update deployment manifest
         run: |
           RELEASE_VERSION="${{ github.event.inputs.release_branch##*/ }}"
@@ -70,12 +81,10 @@ jobs:
           echo "{" > $MANIFEST_FILE
           COUNT=0
 
-
           PROJECTS=$(npx nx show projects --plain)
 
-
           for proj in $PROJECTS; do
-            VERSION=$(node -p "require('./$proj/package.json').version")
+            VERSION=$(node -p "require('./projects/$proj/package.json').version")
             if [ $COUNT -gt 0 ]; then
               echo "," >> $MANIFEST_FILE
             fi
