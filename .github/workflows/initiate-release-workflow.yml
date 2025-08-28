@@ -14,13 +14,12 @@ jobs:
       contents: write
       pull-requests: write
     steps:
-      # 1. Checkout develop (base branch for release)
+      # 1. Checkout develop
       - name: Checkout develop
         uses: actions/checkout@v4
         with:
           ref: develop
           fetch-depth: 0
-
 
       # 2. Create release branch from develop
       - name: Create release branch
@@ -28,56 +27,23 @@ jobs:
           git checkout -b ${{ github.event.inputs.release_branch }}
           git push origin ${{ github.event.inputs.release_branch }}
 
-      # 3. Checkout release branch explicitly for changesets/action
-      - name: Checkout release branch for changesets
+      # 3. Checkout release branch explicitly
+      - name: Checkout release branch
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.inputs.release_branch }}
           fetch-depth: 0
 
-      # 4. Setup Node.js
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 18
-          cache: npm
-
-      # 5. Install dependencies
-      - name: Install dependencies
-        run: npm install
-
-
-      # 6. Detect affected projects vs main
-      - name: Get affected projects
-        id: affected
+      # 4. Override changeset baseBranch to release branch
+      - name: Override changeset baseBranch
         run: |
-          AFFECTED=$(npx nx show projects --affected --base=origin/main --head=HEAD --plain || true)
-          echo "affected=$AFFECTED" >> $GITHUB_OUTPUT
+          jq '.baseBranch = env.RELEASE_BRANCH' .changeset/config.json > tmp.json
+          mv tmp.json .changeset/config.json
+        env:
+          RELEASE_BRANCH: ${{ github.event.inputs.release_branch }}
 
-      # 7. Add a changeset for affected projects (always patch bump)
-      - name: Add changeset
-        if: steps.affected.outputs.affected != ''
-        run: |
-          for project in ${{ steps.affected.outputs.affected }}; do
-            echo "---\"$project\": patch---" | npx changeset add --empty
-          done
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add .changeset
-          git commit -m "ci: add changeset for affected projects" || echo "No changeset added"
-
-      # 8. Check if there are pending commits before running changesets/action
-      - name: Check for pending changeset commits
-        id: pending
-        run: |
-          git fetch origin
-          git rev-list --count origin/${{ github.event.inputs.release_branch }}..HEAD
-          COUNT=$(git rev-list --count origin/${{ github.event.inputs.release_branch }}..HEAD)
-          echo "pending=$COUNT" >> $GITHUB_ENV
-
-      # 9. Run changesets/action to bump versions & open PR if there are pending commits
+      # 5. Run changesets/action to bump versions & open PR
       - name: Version packages and open PR
-        if: env.pending != '0'
         uses: changesets/action@v1
         with:
           version: true
@@ -85,6 +51,41 @@ jobs:
           commit: "chore: version packages"
           title: "Version Packages"
           body: "This PR bumps package versions and updates changelogs based on the changesets"
-            
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # 6. Checkout the version branch created by changesets/action
+      - name: Checkout version branch
+        run: |
+          VERSION_BRANCH="changeset-${{ github.event.inputs.release_branch }}"
+          git fetch origin $VERSION_BRANCH:$VERSION_BRANCH
+          git checkout $VERSION_BRANCH
+
+      # 7. Generate/update deployment manifest in the version branch
+      - name: Generate/update deployment manifest
+        run: |
+          RELEASE_VERSION="${{ github.event.inputs.release_branch##*/ }}"
+          MANIFEST_FILE="deployment-manifest.json"
+
+          echo "{" > $MANIFEST_FILE
+          COUNT=0
+
+          PROJECTS=$(jq -r '.projects | keys[]' angular.json)
+
+          for proj in $PROJECTS; do
+            VERSION=$(node -p "require('./$proj/package.json').version")
+            if [ $COUNT -gt 0 ]; then
+              echo "," >> $MANIFEST_FILE
+            fi
+            echo "  \"$proj\": {\"version\": \"$VERSION\", \"release\": \"$RELEASE_VERSION\"}" >> $MANIFEST_FILE
+            COUNT=$((COUNT+1))
+          done
+
+          echo "}" >> $MANIFEST_FILE
+          cat $MANIFEST_FILE
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add $MANIFEST_FILE
+          git commit -m "ci: update deployment manifest" || echo "No changes to commit"
+          git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }} HEAD
