@@ -59,6 +59,10 @@ jobs:
           
           echo "Updated changeset config:"
           cat .changeset/config.json
+          
+          # Verify the change was applied
+          CURRENT_BASE=$(jq -r '.baseBranch' .changeset/config.json)
+          echo "Verified baseBranch is now set to: $CURRENT_BASE"
         env:
           RELEASE_BRANCH: ${{ github.event.inputs.release_branch }}
 
