@@ -50,7 +50,7 @@ jobs:
       - name: Version packages and open PR
         uses: changesets/action@v1
         with:
-          version: true
+          version: npx changeset version
           publish: false
           commit: "chore: version packages"
           title: "Version Packages"
