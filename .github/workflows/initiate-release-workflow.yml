@@ -55,7 +55,6 @@ jobs:
           publish: false
           commit: "chore: version packages"
           title: "Version Packages"
-          branch: "changeset-${{ env.RELEASE_BRANCH }}"
           baseBranch: ${{ env.RELEASE_BRANCH }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
