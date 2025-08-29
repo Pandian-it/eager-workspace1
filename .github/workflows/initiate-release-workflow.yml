@@ -26,6 +26,7 @@ jobs:
         run: |
           git checkout -b ${{ github.event.inputs.release_branch }}
           git push origin ${{ github.event.inputs.release_branch }}
+          echo "RELEASE_BRANCH=${{ github.event.inputs.release_branch }}" >> $GITHUB_ENV
 
       # 3. Checkout release branch explicitly
       - name: Checkout release branch
@@ -54,6 +55,8 @@ jobs:
           publish: false
           commit: "chore: version packages"
           title: "Version Packages"
+          branch: "changeset-${{ env.RELEASE_BRANCH }}"
+          baseBranch: ${{ env.RELEASE_BRANCH }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
