@@ -74,7 +74,6 @@ jobs:
           publish: false
           commit: "chore: version packages"
           title: "Version Packages"
-          body: "This PR bumps package versions and updates changelogs based on the changesets"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
