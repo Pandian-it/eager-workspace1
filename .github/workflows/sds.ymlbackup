@@ -85,3 +85,24 @@ jobs:
           body: "This PR bumps package versions and updates changelogs based on the changesets"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+            # 6. Override changeset baseBranch to release branch
+      - name: Override changeset baseBranch
+        run: |
+          echo "Current changeset config:"
+          cat .changeset/config.json
+          echo ""
+          echo "Setting baseBranch to: $RELEASE_BRANCH"
+          
+          # Update baseBranch to the release branch
+          jq --arg branch "$RELEASE_BRANCH" '.baseBranch = $branch' .changeset/config.json > tmp.json
+          mv tmp.json .changeset/config.json
+          
+          echo "Updated changeset config:"
+          cat .changeset/config.json
+          
+          # Verify the change was applied
+          CURRENT_BASE=$(jq -r '.baseBranch' .changeset/config.json)
+          echo "Verified baseBranch is now set to: $CURRENT_BASE"
+        env:
+          RELEASE_BRANCH: ${{ github.event.inputs.release_branch }}

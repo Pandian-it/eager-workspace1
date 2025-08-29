@@ -45,28 +45,8 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      # 6. Override changeset baseBranch to release branch
-      - name: Override changeset baseBranch
-        run: |
-          echo "Current changeset config:"
-          cat .changeset/config.json
-          echo ""
-          echo "Setting baseBranch to: $RELEASE_BRANCH"
-          
-          # Update baseBranch to the release branch
-          jq --arg branch "$RELEASE_BRANCH" '.baseBranch = $branch' .changeset/config.json > tmp.json
-          mv tmp.json .changeset/config.json
-          
-          echo "Updated changeset config:"
-          cat .changeset/config.json
-          
-          # Verify the change was applied
-          CURRENT_BASE=$(jq -r '.baseBranch' .changeset/config.json)
-          echo "Verified baseBranch is now set to: $CURRENT_BASE"
-        env:
-          RELEASE_BRANCH: ${{ github.event.inputs.release_branch }}
 
-      # 7. Run changesets/action to bump versions & open PR
+      # 6. Run changesets/action to bump versions & open PR
       - name: Version packages and open PR
         uses: changesets/action@v1
         with:
@@ -77,14 +57,14 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # 8. Checkout the version branch created by changesets/action
+      # 7. Checkout the version branch created by changesets/action
       - name: Checkout version branch
         run: |
           VERSION_BRANCH="changeset-${{ github.event.inputs.release_branch }}"
           git fetch origin $VERSION_BRANCH:$VERSION_BRANCH
           git checkout $VERSION_BRANCH
 
-      # 9. Generate/update deployment manifest in the version branch
+      # 8. Generate/update deployment manifest in the version branch
       - name: Generate/update deployment manifest
         run: |
           RELEASE_BRANCH="${{ github.event.inputs.release_branch }}"
