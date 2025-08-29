@@ -64,7 +64,7 @@ jobs:
       - name: Checkout version branch
         run: |
           VERSION_BRANCH="changeset-${{ github.event.inputs.release_branch }}"
-          git fetch origin $VERSION_BRANCH:$VERSION_BRANCH
+          git fetch origin '+refs/heads/*:refs/remotes/origin/*'
           git checkout $VERSION_BRANCH
 
       # 8. Generate/update deployment manifest in the version branch
