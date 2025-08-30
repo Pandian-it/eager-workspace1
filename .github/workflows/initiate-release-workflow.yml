@@ -74,8 +74,21 @@ jobs:
           RELEASE_VERSION="${RELEASE_BRANCH##*/}"   # e.g. release/13.2.4 → 13.2.4
           MANIFEST_FILE="deployment-manifest.json"
 
-          # Collect affected projects (vs main)
-          AFFECTED=$(npx nx show projects --affected --base=origin/main --head=HEAD --plain || true)
+          # Find the most recent tag (previous release)
+          PREV_TAG=$(git describe --tags --abbrev=0 || echo "")
+
+          echo "Previous release tag: $PREV_TAG"
+          echo "Current release branch: $RELEASE_BRANCH"
+
+          if [ -n "$PREV_TAG" ]; then
+            BASE_REF=$PREV_TAG
+          else
+            # Fallback if no tag exists yet (e.g., first release)
+            BASE_REF=origin/develop
+          fi
+
+          # Collect affected projects vs last tag (or develop for first release)
+          AFFECTED=$(npx nx show projects --affected --base=$BASE_REF --head=HEAD --plain || true)
 
           # Initialize JSON object
           echo "{}" > $MANIFEST_FILE
