@@ -63,7 +63,7 @@ jobs:
       # 7. Checkout the version branch created by changesets/action
       - name: Checkout version branch
         run: |
-          VERSION_BRANCH="changeset-release${{ github.event.inputs.release_branch }}"
+          VERSION_BRANCH="changeset-release/${{ github.event.inputs.release_branch }}"
           git fetch origin '+refs/heads/*:refs/remotes/origin/*'
           git checkout $VERSION_BRANCH
 
