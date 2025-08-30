@@ -74,47 +74,40 @@ jobs:
           RELEASE_VERSION="${RELEASE_BRANCH##*/}"   # e.g. release/13.2.4 → 13.2.4
           MANIFEST_FILE="deployment-manifest.json"
 
-          # Find the most recent tag (previous release)
-          PREV_TAG=$(git describe --tags --abbrev=0 || echo "")
-
-          echo "Previous release tag: $PREV_TAG"
-          echo "Current release branch: $RELEASE_BRANCH"
-
-          if [ -n "$PREV_TAG" ]; then
-            BASE_REF=$PREV_TAG
-          else
-            # Fallback if no tag exists yet (e.g., first release)
-            BASE_REF=origin/develop
+          # Ensure manifest exists, or initialize
+          if [ ! -f "$MANIFEST_FILE" ] || [ ! -s "$MANIFEST_FILE" ]; then
+            echo "{}" > $MANIFEST_FILE
           fi
 
-          # Collect affected projects vs last tag (or develop for first release)
-          AFFECTED=$(npx nx show projects --affected --base=$BASE_REF --head=HEAD --plain || true)
-
-          # Initialize JSON object
-          echo "{}" > $MANIFEST_FILE
-          
           PROJECTS=$(npx nx show projects --plain)
 
           for proj in $PROJECTS; do
             if [ -f "./projects/$proj/package.json" ]; then
-              VERSION=$(node -p "require('./projects/$proj/package.json').version" 2>/dev/null || echo "0.0.0")
-              
-              if echo "$AFFECTED" | grep -qw "$proj"; then
-                RELEASE="$RELEASE_VERSION"
-              else
-                RELEASE=""
-              fi
+              CUR_VERSION=$(node -p "require('./projects/$proj/package.json').version" 2>/dev/null || echo "0.0.0")
 
-              # Add project to manifest using jq
-              jq --arg proj "$proj" --arg version "$VERSION" --arg release "$RELEASE" \
-                '. + {($proj): {version: $version, release: $release}}' \
-                $MANIFEST_FILE > tmp.json && mv tmp.json $MANIFEST_FILE
+              # Read existing version from manifest (if any)
+              EXISTING_VERSION=$(jq -r --arg proj "$proj" '.[$proj].version // empty' $MANIFEST_FILE)
+
+              if [ -z "$EXISTING_VERSION" ]; then
+                echo "Adding new project $proj with version $CUR_VERSION"
+                jq --arg proj "$proj" --arg version "$CUR_VERSION" --arg release "$RELEASE_VERSION" \
+                  '. + {($proj): {version: $version, release: $release}}' \
+                  $MANIFEST_FILE > tmp.json && mv tmp.json $MANIFEST_FILE
+
+              elif [ "$CUR_VERSION" != "$EXISTING_VERSION" ]; then
+                echo "Updating $proj: $EXISTING_VERSION → $CUR_VERSION"
+                jq --arg proj "$proj" --arg version "$CUR_VERSION" --arg release "$RELEASE_VERSION" \
+                  '.[$proj].version = $version | .[$proj].release = $release' \
+                  $MANIFEST_FILE > tmp.json && mv tmp.json $MANIFEST_FILE
+              else
+                echo "No change for $proj (version $CUR_VERSION)"
+              fi
             else
               echo "Warning: package.json not found for project $proj"
             fi
           done
 
-          echo "Generated deployment manifest:"
+          echo "Final deployment manifest:"
           cat $MANIFEST_FILE
 
           git config user.name "github-actions[bot]"

@@ -10,10 +10,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Checkout
-      - name: Checkout code
+      # 1. Checkout release branch
+      - name: Checkout release branch
         uses: actions/checkout@v3
         with:
+          ref: ${{ github.event.ref_name }}
           fetch-depth: 0
 
       # 2. Detect commit author
@@ -49,12 +50,19 @@ jobs:
         id: affected
         run: |
           echo "Detecting affected apps..."
-          AFFECTED=$(npx nx show projects --affected --base=origin/main --head=HEAD --plain)
+          PREV_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          if [ -z "$PREV_TAG" ]; then
+            BASE_BRANCH="origin/develop"
+          else
+            BASE_BRANCH=$PREV_TAG
+          fi
+          echo "Using base: $BASE_BRANCH"
+          AFFECTED=$(npx nx show projects --affected --base=$BASE_BRANCH --head=HEAD --plain)
           echo "AFFECTED=$AFFECTED" >> $GITHUB_ENV
           echo "Affected apps: $AFFECTED"
 
       # -------------------
-      # CASE B: Developer commit → Run changeset action + generate/update manifest
+      # CASE B: Developer commit → Run changeset + update manifest
       # -------------------
       - name: Run changeset action
         if: "!contains(env.AUTHOR, 'github-actions[bot]') && env.AFFECTED != ''"
@@ -67,24 +75,56 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Generate/update manifest (developer PR)
+      - name: Checkout version branch
         if: "!contains(env.AUTHOR, 'github-actions[bot]') && env.AFFECTED != ''"
         run: |
+          VERSION_BRANCH="changeset-release/${GITHUB_REF##*/}"
+          git fetch origin '+refs/heads/*:refs/remotes/origin/*'
+          git checkout $VERSION_BRANCH
+
+      - name: Generate/update deployment manifest
+        if: "!contains(env.AUTHOR, 'github-actions[bot]') && env.AFFECTED != ''"
+        run: |
+          RELEASE_BRANCH="${GITHUB_REF##*/}"
+          RELEASE_VERSION="${RELEASE_BRANCH#release/}"   # e.g. release/13.2.4 → 13.2.4
           MANIFEST_FILE="deployment-manifest.json"
-          echo "{" > $MANIFEST_FILE
-          COUNT=0
-          for app in $AFFECTED; do
-            VERSION=$(node -p "require('./apps/$app/package.json').version")
-            if [ $COUNT -gt 0 ]; then
-              echo "," >> $MANIFEST_FILE
+
+          # Ensure manifest exists, or initialize
+          if [ ! -f "$MANIFEST_FILE" ] || [ ! -s "$MANIFEST_FILE" ]; then
+            echo "{}" > $MANIFEST_FILE
+          fi
+
+          PROJECTS=$(npx nx show projects --plain)
+
+          for proj in $PROJECTS; do
+            if [ -f "./projects/$proj/package.json" ]; then
+              CUR_VERSION=$(node -p "require('./projects/$proj/package.json').version" 2>/dev/null || echo "0.0.0")
+
+              # Read existing version from manifest (if any)
+              EXISTING_VERSION=$(jq -r --arg proj "$proj" '.[$proj].version // empty' $MANIFEST_FILE)
+
+              if [ -z "$EXISTING_VERSION" ]; then
+                echo "Adding new project $proj with version $CUR_VERSION"
+                jq --arg proj "$proj" --arg version "$CUR_VERSION" --arg release "$RELEASE_VERSION" \
+                  '. + {($proj): {version: $version, release: $release}}' \
+                  $MANIFEST_FILE > tmp.json && mv tmp.json $MANIFEST_FILE
+
+              elif [ "$CUR_VERSION" != "$EXISTING_VERSION" ]; then
+                echo "Updating $proj: $EXISTING_VERSION → $CUR_VERSION"
+                jq --arg proj "$proj" --arg version "$CUR_VERSION" --arg release "$RELEASE_VERSION" \
+                  '.[$proj].version = $version | .[$proj].release = $release' \
+                  $MANIFEST_FILE > tmp.json && mv tmp.json $MANIFEST_FILE
+              else
+                echo "No change for $proj (version $CUR_VERSION)"
+              fi
+            else
+              echo "Warning: package.json not found for project $proj"
             fi
-            echo "  \"$app\": \"$VERSION\"" >> $MANIFEST_FILE
-            COUNT=$((COUNT+1))
           done
-          echo "}" >> $MANIFEST_FILE
+
+          echo "Final deployment manifest:"
           cat $MANIFEST_FILE
 
-          # Commit and push manifest
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add $MANIFEST_FILE
@@ -105,12 +145,10 @@ jobs:
       - name: Deploy affected apps to S3
         if: contains(env.AUTHOR, 'github-actions[bot]') && env.AFFECTED != ''
         run: |
-          # Deploy each app to its package.json version folder
           for app in $AFFECTED; do
             APP_VERSION=$(node -p "require('./apps/$app/package.json').version")
             echo "Deploying $app@$APP_VERSION to S3"
             aws s3 sync dist/apps/$app s3://my-release-bucket/$app/$APP_VERSION --delete
           done
 
-          # Deploy manifest file to release-version folder
           aws s3 cp deployment-manifest.json s3://my-release-bucket/manifest/${RELEASE_VERSION}/deployment-manifest.json --acl public-read
