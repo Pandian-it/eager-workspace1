@@ -1,26 +1,26 @@
 {
   "shared-lib": {
-    "version": "0.0.4",
-    "release": "release-14.0.2"
+    "version": "0.0.5",
+    "release": "release-14.1.2"
   },
   "shared-ui": {
-    "version": "0.0.3",
-    "release": "release-14.0.2"
+    "version": "0.0.4",
+    "release": "release-14.1.2"
   },
   "checkout": {
-    "version": "2.0.2",
-    "release": "release-14.0.2"
+    "version": "2.0.3",
+    "release": "release-14.1.2"
   },
   "orders": {
-    "version": "1.1.1",
-    "release": "release-14.0.2"
+    "version": "1.1.2",
+    "release": "release-14.1.2"
   },
   "shell": {
-    "version": "1.0.3",
-    "release": "release-14.0.2"
+    "version": "1.0.4",
+    "release": "release-14.1.2"
   },
   "cart": {
-    "version": "1.0.3",
-    "release": "release-14.0.2"
+    "version": "1.0.4",
+    "release": "release-14.1.2"
   }
 }
