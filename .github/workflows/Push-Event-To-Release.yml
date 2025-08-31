@@ -1,4 +1,4 @@
-name: Release Push Workflow
+name: Push Event To Release
 
 on:
   push:
