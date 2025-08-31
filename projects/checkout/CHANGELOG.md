@@ -1,5 +1,11 @@
 # checkout
 
+## 2.0.1
+
+### Patch Changes
+
+- e136dbf: Auto-generated patch for affected projects
+
 ## 2.0.0
 
 ### Major Changes
