@@ -1,5 +1,11 @@
 # shared-ui
 
+## 0.0.3
+
+### Patch Changes
+
+- 5760af3: Auto-generated patch for affected projects
+
 ## 0.0.2
 
 ### Patch Changes

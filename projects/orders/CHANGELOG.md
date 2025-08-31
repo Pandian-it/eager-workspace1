@@ -1,5 +1,12 @@
 # orders
 
+## 1.1.1
+
+### Patch Changes
+
+- 5760af3: Auto-generated patch for affected projects
+- 5760af3: Auto-generated patch for affected projects
+
 ## 1.1.0
 
 ### Minor Changes
