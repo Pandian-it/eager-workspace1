@@ -1,5 +1,12 @@
 # checkout
 
+## 2.0.2
+
+### Patch Changes
+
+- 5760af3: Auto-generated patch for affected projects
+- 5760af3: Auto-generated patch for affected projects
+
 ## 2.0.1
 
 ### Patch Changes
