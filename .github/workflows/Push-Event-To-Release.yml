@@ -161,4 +161,4 @@ jobs:
             aws s3 sync dist/$app s3://static-app-601416097429/apps/$app/$APP_VERSION --delete
           done
 
-          aws s3 cp deployment-manifest.json s3://static-app-601416097429/manifest/${RELEASE_VERSION}/deployment-manifest.json --acl public-read
+          aws s3 cp deployment-manifest.json s3://static-app-601416097429/manifest/${RELEASE_VERSION}/deployment-manifest.json
