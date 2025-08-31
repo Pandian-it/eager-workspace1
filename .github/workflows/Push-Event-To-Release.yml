@@ -58,7 +58,7 @@ jobs:
             BASE_BRANCH=$PREV_TAG
           fi
           echo "Using base: $BASE_BRANCH"
-          AFFECTED=$(npx nx show projects --affected --base=$BASE_BRANCH --head=HEAD --plain)
+          AFFECTED=$(npx nx show projects --affected --base=$BASE_BRANCH --head=HEAD --plain | tr '\n' ' ' | xargs)
           echo "AFFECTED=$AFFECTED" >> $GITHUB_ENV
           echo "Affected apps: $AFFECTED"
 
