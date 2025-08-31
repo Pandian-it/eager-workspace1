@@ -144,6 +144,12 @@ jobs:
             echo "Building $app..."
             npx nx build $app
           done
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1  # Change this to your region of your bucket
 
       - name: Deploy affected apps to S3
         if: contains(env.AUTHOR, 'github-actions[bot]') && env.AFFECTED != ''
@@ -151,7 +157,7 @@ jobs:
           for app in $AFFECTED; do
             APP_VERSION=$(node -p "require('./apps/$app/package.json').version")
             echo "Deploying $app@$APP_VERSION to S3"
-            aws s3 sync dist/apps/$app s3://my-release-bucket/$app/$APP_VERSION --delete
+            aws s3 sync dist/apps/$app s3://static-app-601416097429/apps/$app/$APP_VERSION --delete
           done
 
-          aws s3 cp deployment-manifest.json s3://my-release-bucket/manifest/${RELEASE_VERSION}/deployment-manifest.json --acl public-read
+          aws s3 cp deployment-manifest.json s3://static-app-601416097429/manifest/${RELEASE_VERSION}/deployment-manifest.json --acl public-read

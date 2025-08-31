@@ -8,7 +8,7 @@ on:
 
 jobs:
   pr-build-changeset:
-    if: github.actor != 'github-actions[bot]'
+    if: github.actor != 'github-actions[bot]' && !startsWith(github.head_ref, 'release-')
     runs-on: ubuntu-latest
     steps:
       # 1. Checkout the PR branch with full history
