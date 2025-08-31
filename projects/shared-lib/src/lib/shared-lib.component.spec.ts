@@ -2,7 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { SharedLibComponent } from './shared-lib.component';
 
-describe('SharedLibComponent', () => {
+describe('SharedLibComponent.', () => {
   let component: SharedLibComponent;
   let fixture: ComponentFixture<SharedLibComponent>;
 
