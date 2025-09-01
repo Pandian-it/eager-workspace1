@@ -71,7 +71,7 @@ jobs:
       - name: Generate/update deployment manifest
         run: |
           RELEASE_BRANCH="${{ github.event.inputs.release_branch }}"
-          RELEASE_VERSION="${RELEASE_BRANCH##*/}"   # e.g. release/13.2.4 → 13.2.4
+          RELEASE_VERSION="${RELEASE_BRANCH#release-}"   # e.g. release-13.2.4 → 13.2.4
           MANIFEST_FILE="deployment-manifest.json"
 
           # Ensure manifest exists, or initialize
