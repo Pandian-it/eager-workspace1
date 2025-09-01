@@ -140,9 +140,38 @@ jobs:
       - name: Build affected apps
         if: contains(env.AUTHOR, 'github-actions[bot]') && env.AFFECTED != ''
         run: |
+          # Clean any existing build artifacts
+          rm -rf dist/
+          
           for app in $AFFECTED; do
             echo "Building $app..."
-            npx nx build $app
+            npx nx build $app --verbose
+            
+            # Verify build output
+            echo "Build output for $app:"
+            ls -la dist/$app/
+            
+            # Check for missing chunk references
+            echo "Checking for chunk file references in main files:"
+            for mainfile in dist/$app/main-*.js; do
+              if [ -f "$mainfile" ]; then
+                echo "Main file: $mainfile"
+                echo "Chunk references:"
+                grep -o 'chunk-[A-Z0-9]*\.js' "$mainfile" || echo "No chunk references found"
+                
+                # Verify referenced chunks exist
+                for chunk in $(grep -o 'chunk-[A-Z0-9]*\.js' "$mainfile" 2>/dev/null || true); do
+                  if [ -f "dist/$app/$chunk" ]; then
+                    echo "✅ Found: dist/$app/$chunk"
+                  else
+                    echo "❌ Missing: dist/$app/$chunk"
+                    echo "Available files in dist/$app/:"
+                    ls -la dist/$app/
+                    exit 1
+                  fi
+                done
+              fi
+            done
           done
       - name: Configure AWS Credentials
         if: contains(env.AUTHOR, 'github-actions[bot]') && env.AFFECTED != ''
@@ -158,7 +187,28 @@ jobs:
           for app in $AFFECTED; do
             APP_VERSION=$(node -p "require('./projects/$app/package.json').version")
             echo "Deploying $app@$APP_VERSION to S3"
-            aws s3 sync dist/$app s3://static-app-601416097429/apps/$app/$APP_VERSION --delete
+            
+            # List files that will be uploaded
+            echo "Files to upload for $app:"
+            ls -la dist/$app/
+            
+            # Sync with verbose output and set correct content-type for JS files
+            aws s3 sync dist/$app s3://static-app-601416097429/apps/$app/$APP_VERSION \
+              --delete \
+              --content-type-by-extension \
+              --metadata-directive REPLACE \
+              --exclude "*" \
+              --include "*.js" \
+              --content-type "application/javascript"
+            
+            # Sync other files
+            aws s3 sync dist/$app s3://static-app-601416097429/apps/$app/$APP_VERSION \
+              --delete \
+              --exclude "*.js"
+            
+            # Verify upload
+            echo "Verifying upload for $app:"
+            aws s3 ls s3://static-app-601416097429/apps/$app/$APP_VERSION/ --recursive
           done
 
           aws s3 cp deployment-manifest.json s3://static-app-601416097429/manifest/${RELEASE_VERSION}/deployment-manifest.json
