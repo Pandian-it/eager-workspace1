@@ -67,7 +67,11 @@
     "esbuild": {
       "executor": "@angular-architects/native-federation:build",
       "options": {
-        "outputPath": "dist/checkout",
+        "namedChunks": true,
+        "outputPath": {
+          "base": "dist/checkout",
+          "browser": ""
+        },
         "index": "projects/checkout/src/index.html",
         "browser": "projects/checkout/src/main.ts",
         "polyfills": [

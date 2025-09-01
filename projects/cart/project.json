@@ -65,7 +65,11 @@
     "esbuild": {
       "executor": "@angular-architects/native-federation:build",
       "options": {
-        "outputPath": "dist/cart",
+        "namedChunks": true,
+        "outputPath": {
+          "base": "dist/cart",
+          "browser": ""
+        },
         "index": "projects/cart/src/index.html",
         "browser": "projects/cart/src/main.ts",
         "polyfills": [

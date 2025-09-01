@@ -65,7 +65,11 @@
     "esbuild": {
       "executor": "@angular-architects/native-federation:build",
       "options": {
-        "outputPath": "dist/orders",
+        "namedChunks": true,
+        "outputPath": {
+          "base": "dist/orders",
+          "browser": ""
+        },
         "index": "projects/orders/src/index.html",
         "polyfills": [
           "zone.js",
