@@ -1,5 +1,11 @@
 # orders
 
+## 1.1.2
+
+### Patch Changes
+
+- f3750fd: Auto-generated patch for affected projects
+
 ## 1.1.1
 
 ### Patch Changes
