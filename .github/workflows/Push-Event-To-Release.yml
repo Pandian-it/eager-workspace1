@@ -192,19 +192,17 @@ jobs:
             echo "Files to upload for $app:"
             ls -la dist/$app/
             
-            # Sync with verbose output and set correct content-type for JS files
-            aws s3 sync dist/$app s3://static-app-601416097429/apps/$app/$APP_VERSION \
-              --delete \
-              --content-type-by-extension \
-              --metadata-directive REPLACE \
+            # First, sync all files normally
+            aws s3 sync dist/$app s3://static-app-601416097429/apps/$app/$APP_VERSION --delete
+            
+            # Then fix content-type for JavaScript files
+            echo "Setting correct content-type for JavaScript files..."
+            aws s3 cp s3://static-app-601416097429/apps/$app/$APP_VERSION/ s3://static-app-601416097429/apps/$app/$APP_VERSION/ \
+              --recursive \
               --exclude "*" \
               --include "*.js" \
-              --content-type "application/javascript"
-            
-            # Sync other files
-            aws s3 sync dist/$app s3://static-app-601416097429/apps/$app/$APP_VERSION \
-              --delete \
-              --exclude "*.js"
+              --content-type "application/javascript" \
+              --metadata-directive REPLACE
             
             # Verify upload
             echo "Verifying upload for $app:"
