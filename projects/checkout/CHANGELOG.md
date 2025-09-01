@@ -1,5 +1,11 @@
 # checkout
 
+## 2.0.3
+
+### Patch Changes
+
+- f3750fd: Auto-generated patch for affected projects
+
 ## 2.0.2
 
 ### Patch Changes

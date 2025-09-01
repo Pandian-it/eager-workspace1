@@ -1,5 +1,11 @@
 # shared-lib
 
+## 0.0.5
+
+### Patch Changes
+
+- f3750fd: Auto-generated patch for affected projects
+
 ## 0.0.4
 
 ### Patch Changes
