@@ -3,7 +3,10 @@ import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 
 interface ManifestConfig {
-  [key: string]: string;
+  [key: string]: string | {
+    version: string;
+    release: string;
+  };
 }
 
 @Injectable({
@@ -11,20 +14,25 @@ interface ManifestConfig {
 })
 export class ManifestService {
   private manifest: ManifestConfig | null = null;
-  //private readonly manifestUrl = 'https://your-cloudfront-domain.com/federation.manifest.json';
-  private readonly cloudFrontUrl = 'https://your-cloudfront-domain.com/federation.manifest.json';
   private readonly localManifestUrl = 'mfe.manifest.json';
-  private readonly mfeCloudFrontUrl = 'https://your-cloudfront-domain.com/';
+  private readonly deploymentManifestUrl = 'deployment-manifest.json';
 
   constructor(private http: HttpClient) {}
 
   async loadManifest(): Promise<void> {
     if (!this.manifest) {
-      //this.manifest = await firstValueFrom(this.http.get<ManifestConfig>(this.manifestUrl));
       const isLocalhost = window.location.hostname === 'localhost';
-      const manifestUrl = isLocalhost ? this.localManifestUrl : this.cloudFrontUrl;
+      
+      let manifestUrl: string;
+      if (isLocalhost) {
+        manifestUrl = this.localManifestUrl;
+      } else {
+        // Derive CloudFront URL from current domain
+        const currentOrigin = window.location.origin;
+        manifestUrl = `${currentOrigin}/${this.deploymentManifestUrl}`;
+      }
+      
       this.manifest = await firstValueFrom(this.http.get<ManifestConfig>(manifestUrl));
-
     }
   }
 
@@ -32,15 +40,20 @@ export class ManifestService {
     if (!this.manifest) {
       throw new Error('Manifest not loaded');
     }
+    
+    const appConfig = this.manifest[appName];
+    if (!appConfig) {
+      throw new Error(`App '${appName}' not found in manifest`);
+    }
+    
     if (window.location.hostname === 'localhost') {
-        return this.manifest[appName];
+      // For localhost, mfe.manifest.json contains direct URLs
+      return appConfig as string;
     } else {
-        return this.mfeCloudFrontUrl + appName +'/' + this.manifest[appName] + '/remoteEntry.json';
+      // For production, deployment-manifest.json contains version objects
+      const deploymentConfig = appConfig as { version: string; release: string };
+      const currentOrigin = window.location.origin;
+      return `${currentOrigin}/apps/${appName}/${deploymentConfig.version}/remoteEntry.json`;
     }
-   /* const remoteUrl = this.manifest[appName];
-    if (!remoteUrl) {
-      throw new Error(`Remote entry for ${appName} not found in manifest`);
-    }
-    return remoteUrl; */
-  }
+  } 
 }
