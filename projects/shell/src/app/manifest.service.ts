@@ -53,7 +53,8 @@ export class ManifestService {
     } else {
       // For production, deployment-manifest.json contains version objects
       const deploymentConfig = appConfig as { version: string; release: string };
-      const currentOrigin = window.location.origin;
+     /// const currentOrigin = window.location.origin;
+      const currentOrigin = window.location.origin.replace('www', 'mfe');
       return `${currentOrigin}/apps/${appName}/${deploymentConfig.version}/remoteEntry.js`;
     }
   }
