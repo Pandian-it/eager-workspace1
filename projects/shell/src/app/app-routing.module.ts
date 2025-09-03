@@ -1,6 +1,5 @@
 import { NgModule, Injector } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
-import { loadRemoteModule } from '@angular-architects/module-federation';
 import { ManifestService } from './manifest.service';
 
 // Create a global reference to the injector
@@ -11,78 +10,31 @@ const routes: Routes = [
     path: 'cart',
     loadChildren: () => {
       const manifestService = appInjector.get(ManifestService);
-      
-      // For localhost, use direct URLs
-      if (window.location.hostname === 'localhost') {
-        return loadRemoteModule({
-          type: 'module',
-          remoteEntry: 'http://localhost:4201/remoteEntry.js',
-          exposedModule: './Module'
-        }).then(m => m.MfeModule);
-      } else {
-        // For production, use manifest
-        return manifestService.loadManifest().then(() =>
-          loadRemoteModule({
-            type: 'module',
-            remoteEntry: manifestService.getRemoteUrl('cart'),
-            exposedModule: './Module'
-          }).then(m => m.MfeModule)
-        );
-      }
+      return manifestService.loadRemoteModule('cart');
     }
   },
   {
     path: 'checkout',
     loadChildren: () => {
       const manifestService = appInjector.get(ManifestService);
-      
-      if (window.location.hostname === 'localhost') {
-        return loadRemoteModule({
-          type: 'module',
-          remoteEntry: 'http://localhost:4202/remoteEntry.js',
-          exposedModule: './Module'
-        }).then(m => m.MfeModule);
-      } else {
-        return manifestService.loadManifest().then(() =>
-          loadRemoteModule({
-            type: 'module',
-            remoteEntry: manifestService.getRemoteUrl('checkout'),
-            exposedModule: './Module'
-          }).then(m => m.MfeModule)
-        );
-      }
+      return manifestService.loadRemoteModule('checkout');
     }
   },
   {
     path: 'orders',
     loadChildren: () => {
       const manifestService = appInjector.get(ManifestService);
-      
-      if (window.location.hostname === 'localhost') {
-        return loadRemoteModule({
-          type: 'module',
-          remoteEntry: 'http://localhost:4203/remoteEntry.js',
-          exposedModule: './Module'
-        }).then(m => m.MfeModule);
-      } else {
-        return manifestService.loadManifest().then(() =>
-          loadRemoteModule({
-            type: 'module',
-            remoteEntry: manifestService.getRemoteUrl('orders'),
-            exposedModule: './Module'
-          }).then(m => m.MfeModule)
-        );
-      }
+      return manifestService.loadRemoteModule('orders');
     }
   },
   {
     path: '',
-    redirectTo: '/cart',
+    redirectTo: '/',
     pathMatch: 'full'
   },
   {
     path: '**',
-    redirectTo: '/cart'
+    redirectTo: '/'
   }
 ];
 
