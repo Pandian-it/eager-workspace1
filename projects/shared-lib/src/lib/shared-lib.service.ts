@@ -7,6 +7,7 @@ export class SharedLibService {
  num:number = 0;
  value: number=0;
   constructor() { }
+  
   getData() {
     return 'Shared Library Data';
   }
