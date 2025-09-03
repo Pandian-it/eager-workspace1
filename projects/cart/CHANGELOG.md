@@ -1,5 +1,11 @@
 # cart
 
+## 1.0.5
+
+### Patch Changes
+
+- 50e0f97: Auto-generated patch for affected projects
+
 ## 1.0.4
 
 ### Patch Changes

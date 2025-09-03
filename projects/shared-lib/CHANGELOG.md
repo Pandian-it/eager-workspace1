@@ -1,5 +1,11 @@
 # shared-lib
 
+## 0.0.6
+
+### Patch Changes
+
+- 50e0f97: Auto-generated patch for affected projects
+
 ## 0.0.5
 
 ### Patch Changes
