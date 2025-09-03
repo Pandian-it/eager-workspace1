@@ -17,27 +17,85 @@
   "prefix": "app",
   "targets": {
     "build": {
-      "executor": "@angular-architects/native-federation:build",
-      "options": {},
+      "executor": "@nx/angular:webpack-browser",
+      "options": {
+        "outputPath": "dist/shell",
+        "index": "projects/shell/src/index.html",
+        "main": "projects/shell/src/main.ts",
+        "polyfills": [
+          "zone.js"
+        ],
+        "tsConfig": "projects/shell/tsconfig.app.json",
+        "assets": [
+          {
+            "glob": "**/*",
+            "input": "projects/shell/public"
+          }
+        ],
+        "styles": [
+          "projects/shell/src/styles.css"
+        ],
+        "scripts": [],
+        "customWebpackConfig": {
+          "path": "projects/shell/webpack.config.js"
+        }
+      },
       "configurations": {
         "production": {
-          "target": "shell:esbuild:production"
+          "budgets": [
+            {
+              "type": "initial",
+              "maximumWarning": "500kB",
+              "maximumError": "1MB"
+            },
+            {
+              "type": "anyComponentStyle",
+              "maximumWarning": "2kB",
+              "maximumError": "4kB"
+            }
+          ],
+          "outputHashing": "all",
+          "optimization": {
+            "scripts": true,
+            "styles": {
+              "minify": true,
+              "inlineCritical": true
+            },
+            "fonts": true
+          },
+          "sourceMap": false,
+          "aot": true,
+          "extractLicenses": true,
+          "vendorChunk": false,
+          "buildOptimizer": true,
+          "crossOrigin": "none"
         },
         "development": {
-          "target": "shell:esbuild:development",
-          "dev": true
+          "optimization": false,
+          "extractLicenses": false,
+          "sourceMap": true,
+          "vendorChunk": true,
+          "namedChunks": true
         }
       },
       "defaultConfiguration": "production"
     },
     "serve": {
-      "executor": "@angular-architects/native-federation:build",
+      "executor": "@angular-devkit/build-angular:dev-server",
       "options": {
-        "target": "shell:serve-original:development",
-        "rebuildDelay": 0,
-        "dev": true,
-        "port": 0
-      }
+        "buildTarget": "shell:build",
+        "port": 4200,
+        "historyApiFallback": true
+      },
+      "configurations": {
+        "production": {
+          "buildTarget": "shell:build:production"
+        },
+        "development": {
+          "buildTarget": "shell:build:development"
+        }
+      },
+      "defaultConfiguration": "development"
     },
     "extract-i18n": {
       "executor": "@angular-devkit/build-angular:extract-i18n"
@@ -61,75 +119,6 @@
         ],
         "scripts": []
       }
-    },
-    "esbuild": {
-      "executor": "@angular-architects/native-federation:build",
-      "options": {
-        "namedChunks": true,
-        "outputPath": {
-          "base": "dist/shell",
-          "browser": ""
-        },
-        "index": "projects/shell/src/index.html",
-        "polyfills": [
-          "zone.js",
-          "es-module-shims"
-        ],
-        "tsConfig": "projects/shell/tsconfig.app.json",
-        "assets": [
-          {
-            "glob": "**/*",
-            "input": "projects/shell/public"
-          }
-        ],
-        "styles": [
-          "projects/shell/src/styles.css"
-        ],
-        "scripts": [],
-        "browser": "projects/shell/src/main.ts"
-      },
-      "configurations": {
-        "production": {
-          "budgets": [
-            {
-              "type": "initial",
-              "maximumWarning": "500kB",
-              "maximumError": "1MB"
-            },
-            {
-              "type": "anyComponentStyle",
-              "maximumWarning": "2kB",
-              "maximumError": "4kB"
-            }
-          ],
-          "outputHashing": "all",
-          "optimization": true,
-          "sourceMap": false,
-          "namedChunks": false
-        },
-        "development": {
-          "optimization": false,
-          "extractLicenses": false,
-          "sourceMap": true
-        }
-      },
-      "defaultConfiguration": "production"
-    },
-    "serve-original": {
-      "executor": "@angular-devkit/build-angular:dev-server",
-      "options": {
-        "port": 4201,
-        "buildTarget": "shell:build"
-      },
-      "configurations": {
-        "production": {
-          "buildTarget": "shell:esbuild:production"
-        },
-        "development": {
-          "buildTarget": "shell:esbuild:development"
-        }
-      },
-      "defaultConfiguration": "production"
     }
   }
 }

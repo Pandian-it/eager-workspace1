@@ -6,6 +6,7 @@ import { AppComponent } from './app.component';
 import { primitiveReducer, objectReducer, objectReducer1, combinedReducer } from './store/reducers/app.reducer';
 import { StoreDevtoolsModule } from '@ngrx/store-devtools';
 import { provideHttpClient } from '@angular/common/http';
+import { ManifestService } from './manifest.service';
 
 
 @NgModule({
@@ -23,7 +24,8 @@ import { provideHttpClient } from '@angular/common/http';
     AppRoutingModule
   ],
   providers: [
-    provideHttpClient()
+    provideHttpClient(),
+    ManifestService
   ],
   bootstrap: [AppComponent]
 })

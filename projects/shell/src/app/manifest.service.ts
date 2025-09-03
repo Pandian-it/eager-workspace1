@@ -48,12 +48,14 @@ export class ManifestService {
     
     if (window.location.hostname === 'localhost') {
       // For localhost, mfe.manifest.json contains direct URLs
-      return appConfig as string;
+      // Convert .json to .js for Webpack Module Federation
+      const url = appConfig as string;
+      return url.replace('remoteEntry.json', 'remoteEntry.js');
     } else {
       // For production, deployment-manifest.json contains version objects
       const deploymentConfig = appConfig as { version: string; release: string };
       const currentOrigin = window.location.origin;
-      return `${currentOrigin}/apps/${appName}/${deploymentConfig.version}/remoteEntry.json`;
+      return `${currentOrigin}/apps/${appName}/${deploymentConfig.version}/remoteEntry.js`;
     }
-  } 
+  }
 }

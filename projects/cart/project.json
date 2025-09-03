@@ -17,27 +17,76 @@
   "prefix": "app",
   "targets": {
     "build": {
-      "executor": "@angular-architects/native-federation:build",
-      "options": {},
+      "executor": "@nx/angular:webpack-browser",
+      "options": {
+        "outputPath": "dist/cart",
+        "index": "projects/cart/src/index.html",
+        "main": "projects/cart/src/main.ts",
+        "polyfills": [
+          "zone.js"
+        ],
+        "tsConfig": "projects/cart/tsconfig.app.json",
+        "assets": [
+          {
+            "glob": "**/*",
+            "input": "projects/cart/public"
+          }
+        ],
+        "styles": [
+          "projects/cart/src/styles.css"
+        ],
+        "scripts": [],
+        "customWebpackConfig": {
+          "path": "projects/cart/webpack.config.js"
+        }
+      },
       "configurations": {
         "production": {
-          "target": "cart:esbuild:production"
+          "budgets": [
+            {
+              "type": "initial",
+              "maximumWarning": "500kB",
+              "maximumError": "2MB"
+            },
+            {
+              "type": "anyComponentStyle",
+              "maximumWarning": "2kB",
+              "maximumError": "4kB"
+            }
+          ],
+          "outputHashing": "all",
+          "optimization": true,
+          "sourceMap": false,
+          "aot": true,
+          "extractLicenses": true,
+          "vendorChunk": false,
+          "buildOptimizer": true
         },
         "development": {
-          "target": "cart:esbuild:development",
-          "dev": true
+          "optimization": false,
+          "extractLicenses": false,
+          "sourceMap": true,
+          "vendorChunk": true,
+          "namedChunks": true
         }
       },
       "defaultConfiguration": "production"
     },
     "serve": {
-      "executor": "@angular-architects/native-federation:build",
+      "executor": "@angular-devkit/build-angular:dev-server",
       "options": {
-        "target": "cart:serve-original:development",
-        "rebuildDelay": 0,
-        "dev": true,
-        "port": 0
-      }
+        "buildTarget": "cart:build",
+        "port": 4201
+      },
+      "configurations": {
+        "production": {
+          "buildTarget": "cart:build:production"
+        },
+        "development": {
+          "buildTarget": "cart:build:development"
+        }
+      },
+      "defaultConfiguration": "development"
     },
     "extract-i18n": {
       "executor": "@angular-devkit/build-angular:extract-i18n"
@@ -60,72 +109,6 @@
           "projects/cart/src/styles.css"
         ],
         "scripts": []
-      }
-    },
-    "esbuild": {
-      "executor": "@angular-architects/native-federation:build",
-      "options": {
-        "namedChunks": true,
-        "outputPath": {
-          "base": "dist/cart",
-          "browser": ""
-        },
-        "index": "projects/cart/src/index.html",
-        "browser": "projects/cart/src/main.ts",
-        "polyfills": [
-          "zone.js",
-          "es-module-shims"
-        ],
-        "tsConfig": "projects/cart/tsconfig.app.json",
-        "assets": [
-          {
-            "glob": "**/*",
-            "input": "projects/cart/public"
-          }
-        ],
-        "styles": [
-          "projects/cart/src/styles.css"
-        ],
-        "scripts": []
-      },
-      "configurations": {
-        "production": {
-          "budgets": [
-            {
-              "type": "initial",
-              "maximumWarning": "500kB",
-              "maximumError": "1MB"
-            },
-            {
-              "type": "anyComponentStyle",
-              "maximumWarning": "2kB",
-              "maximumError": "4kB"
-            }
-          ],
-          "outputHashing": "all"
-        },
-        "development": {
-          "optimization": false,
-          "extractLicenses": false,
-          "sourceMap": true
-        }
-      },
-      "defaultConfiguration": "production"
-    },
-    "serve-original": {
-      "executor": "@angular-devkit/build-angular:dev-server",
-      "configurations": {
-        "production": {
-          "buildTarget": "cart:esbuild:production"
-        },
-        "development": {
-          "buildTarget": "cart:esbuild:development"
-        }
-      },
-      "defaultConfiguration": "development",
-      "options": {
-        "port": 4204,
-        "buildTarget": "cart:build"
       }
     }
   }
