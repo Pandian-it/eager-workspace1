@@ -1,5 +1,11 @@
 # shell
 
+## 1.0.5
+
+### Patch Changes
+
+- b7f0118: Auto-generated patch for affected projects
+
 ## 1.0.4
 
 ### Patch Changes
