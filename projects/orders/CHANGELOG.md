@@ -1,5 +1,11 @@
 # orders
 
+## 1.1.3
+
+### Patch Changes
+
+- 50e0f97: Auto-generated patch for affected projects
+
 ## 1.1.2
 
 ### Patch Changes
