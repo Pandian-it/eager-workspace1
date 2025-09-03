@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
+import { loadRemoteModule } from '@angular-architects/module-federation';
 
 interface ManifestConfig {
   [key: string]: string | {
@@ -53,7 +54,23 @@ export class ManifestService {
       // For production, deployment-manifest.json contains version objects
       const deploymentConfig = appConfig as { version: string; release: string };
       const currentOrigin = window.location.origin;
-      return `${currentOrigin}/apps/${appName}/${deploymentConfig.version}/remoteEntry.json`;
+      return `${currentOrigin}/apps/${appName}/${deploymentConfig.version}/remoteEntry.js`;
     }
-  } 
+  }
+
+  // Centralized method for loading remote modules
+  async loadRemoteModule(appName: string): Promise<any> {
+    // Always load manifest first (works for both localhost and production)
+    await this.loadManifest();
+    
+    // Get the remote URL from manifest
+    const remoteUrl = this.getRemoteUrl(appName);
+    
+    // Load the remote module
+    return loadRemoteModule({
+      type: 'module',
+      remoteEntry: remoteUrl,
+      exposedModule: './Module'
+    }).then(m => m.MfeModule);
+  }
 }

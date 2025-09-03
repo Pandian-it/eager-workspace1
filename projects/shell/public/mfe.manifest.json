@@ -1,5 +1,5 @@
 {
-  "orders": "http://localhost:4202/remoteEntry.json",
-  "cart": "http://localhost:4204/remoteEntry.json",
-  "checkout": "http://localhost:4205/remoteEntry.json"
+  "orders": "http://localhost:4203/remoteEntry.js",
+  "cart": "http://localhost:4201/remoteEntry.js",
+  "checkout": "http://localhost:4202/remoteEntry.js"
 }

@@ -18,27 +18,84 @@
   "prefix": "app",
   "targets": {
     "build": {
-      "executor": "@angular-architects/native-federation:build",
-      "options": {},
+      "executor": "@nx/angular:webpack-browser",
+      "options": {
+        "outputPath": "dist/checkout",
+        "index": "projects/checkout/src/index.html",
+        "main": "projects/checkout/src/main.ts",
+        "polyfills": [
+          "zone.js"
+        ],
+        "tsConfig": "projects/checkout/tsconfig.app.json",
+        "assets": [
+          {
+            "glob": "**/*",
+            "input": "projects/checkout/public"
+          }
+        ],
+        "styles": [
+          "projects/checkout/src/styles.scss"
+        ],
+        "scripts": [],
+        "customWebpackConfig": {
+          "path": "projects/checkout/webpack.config.js"
+        }
+      },
       "configurations": {
         "production": {
-          "target": "checkout:esbuild:production"
+          "budgets": [
+            {
+              "type": "initial",
+              "maximumWarning": "500kB",
+              "maximumError": "1MB"
+            },
+            {
+              "type": "anyComponentStyle",
+              "maximumWarning": "2kB",
+              "maximumError": "4kB"
+            }
+          ],
+          "outputHashing": "all",
+          "optimization": {
+            "scripts": true,
+            "styles": {
+              "minify": true,
+              "inlineCritical": true
+            },
+            "fonts": true
+          },
+          "sourceMap": false,
+          "aot": true,
+          "extractLicenses": true,
+          "vendorChunk": false,
+          "buildOptimizer": true,
+          "crossOrigin": "none"
         },
         "development": {
-          "target": "checkout:esbuild:development",
-          "dev": true
+          "optimization": false,
+          "extractLicenses": false,
+          "sourceMap": true,
+          "vendorChunk": true,
+          "namedChunks": true
         }
       },
       "defaultConfiguration": "production"
     },
     "serve": {
-      "executor": "@angular-architects/native-federation:build",
+      "executor": "@angular-devkit/build-angular:dev-server",
       "options": {
-        "target": "checkout:serve-original:development",
-        "rebuildDelay": 0,
-        "dev": true,
-        "port": 0
-      }
+        "buildTarget": "checkout:build",
+        "port": 4202
+      },
+      "configurations": {
+        "production": {
+          "buildTarget": "checkout:build:production"
+        },
+        "development": {
+          "buildTarget": "checkout:build:development"
+        }
+      },
+      "defaultConfiguration": "development"
     },
     "extract-i18n": {
       "executor": "@angular-devkit/build-angular:extract-i18n"
@@ -62,73 +119,6 @@
           "projects/checkout/src/styles.scss"
         ],
         "scripts": []
-      }
-    },
-    "esbuild": {
-      "executor": "@angular-architects/native-federation:build",
-      "options": {
-        "namedChunks": true,
-        "outputPath": {
-          "base": "dist/checkout",
-          "browser": ""
-        },
-        "index": "projects/checkout/src/index.html",
-        "browser": "projects/checkout/src/main.ts",
-        "polyfills": [
-          "zone.js",
-          "es-module-shims"
-        ],
-        "tsConfig": "projects/checkout/tsconfig.app.json",
-        "inlineStyleLanguage": "scss",
-        "assets": [
-          {
-            "glob": "**/*",
-            "input": "projects/checkout/public"
-          }
-        ],
-        "styles": [
-          "projects/checkout/src/styles.scss"
-        ],
-        "scripts": []
-      },
-      "configurations": {
-        "production": {
-          "budgets": [
-            {
-              "type": "initial",
-              "maximumWarning": "500kB",
-              "maximumError": "1MB"
-            },
-            {
-              "type": "anyComponentStyle",
-              "maximumWarning": "2kB",
-              "maximumError": "4kB"
-            }
-          ],
-          "outputHashing": "all"
-        },
-        "development": {
-          "optimization": false,
-          "extractLicenses": false,
-          "sourceMap": true
-        }
-      },
-      "defaultConfiguration": "production"
-    },
-    "serve-original": {
-      "executor": "@angular-devkit/build-angular:dev-server",
-      "configurations": {
-        "production": {
-          "buildTarget": "checkout:esbuild:production"
-        },
-        "development": {
-          "buildTarget": "checkout:esbuild:development"
-        }
-      },
-      "defaultConfiguration": "development",
-      "options": {
-        "port": 4205,
-        "buildTarget": "checkout:build"
       }
     }
   }
