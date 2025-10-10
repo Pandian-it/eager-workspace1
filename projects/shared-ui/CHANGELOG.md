@@ -1,5 +1,11 @@
 # shared-ui
 
+## 0.0.5
+
+### Patch Changes
+
+- 9f11c8c: Auto-generated patch for affected projects
+
 ## 0.0.4
 
 ### Patch Changes
