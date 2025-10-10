@@ -1,5 +1,11 @@
 # shell
 
+## 1.0.7
+
+### Patch Changes
+
+- cced1a6: Auto-generated patch for affected projects
+
 ## 1.0.6
 
 ### Patch Changes
