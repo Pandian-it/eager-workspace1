@@ -1,0 +1,20 @@
+{
+  "compileOnSave": false,
+  "compilerOptions": {
+    "sourceMap": true,
+    "declaration": false,
+    "moduleResolution": "bundler",
+    "experimentalDecorators": true,
+    "importHelpers": true,
+    "target": "ES2022",
+    "module": "ES2022",
+    "lib": ["ES2022", "dom"],
+    "skipLibCheck": true,
+    "baseUrl": "./",
+    "paths": {
+      "@shared-lib": ["projects/shared-lib/src/public-api"],
+      "@shared-ui": ["projects/shared-ui/src/public-api.ts"],
+      "shared-messagebus": ["projects/shared-messagebus/src/index.ts"]
+    }
+  }
+}

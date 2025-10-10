@@ -1,6 +1,7 @@
 
 import { Routes } from '@angular/router';
 import { AppComponent } from './app.component';
+import { CheckoutSummaryComponent } from './components/checkout-summary.component';
 
 /*
 const routes: Routes = [];
@@ -18,6 +19,9 @@ export const routes: Routes = [
       {
         path: '', pathMatch: 'full', component: AppComponent
         
+      },
+      {
+        path: 'summary', component: CheckoutSummaryComponent
       }
     ]
   }
