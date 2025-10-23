@@ -1,8 +1,6 @@
 import { 
   StoreDataPayload, 
-  HierarchicalStoreDataPayload,
   StoreDataResponsePayload, 
-  HierarchicalStoreDataResponsePayload,
   StoreActionPayload, 
   NavigationPayload, 
   NotificationPayload 
@@ -15,8 +13,6 @@ import {
 export enum MessageType {
   STORE_STATE_REQUEST = 'STORE_STATE_REQUEST',
   STORE_STATE_RESPONSE = 'STORE_STATE_RESPONSE',
-  HIERARCHICAL_STORE_REQUEST = 'HIERARCHICAL_STORE_REQUEST',
-  HIERARCHICAL_STORE_RESPONSE = 'HIERARCHICAL_STORE_RESPONSE',
   STORE_ACTION = 'STORE_ACTION',
   NAVIGATE_TO = 'NAVIGATE_TO',
   NOTIFICATION_RECEIVED = 'NOTIFICATION_RECEIVED'
@@ -46,17 +42,6 @@ export interface StoreStateResponseMessage extends BaseMessage<StoreDataResponse
   correlationId: string; // Required for responses
 }
 
-// Hierarchical store message interfaces
-export interface HierarchicalStoreRequestMessage extends BaseMessage<HierarchicalStoreDataPayload> {
-  type: MessageType.HIERARCHICAL_STORE_REQUEST;
-  correlationId: string; // Required for requests
-}
-
-export interface HierarchicalStoreResponseMessage extends BaseMessage<HierarchicalStoreDataResponsePayload> {
-  type: MessageType.HIERARCHICAL_STORE_RESPONSE;
-  correlationId: string; // Required for responses
-}
-
 export interface StoreActionMessage extends BaseMessage<StoreActionPayload> {
   type: MessageType.STORE_ACTION;
 }
@@ -73,8 +58,6 @@ export interface NotificationReceivedMessage extends BaseMessage<NotificationPay
 export type Message = 
   | StoreStateRequestMessage 
   | StoreStateResponseMessage 
-  | HierarchicalStoreRequestMessage
-  | HierarchicalStoreResponseMessage
   | StoreActionMessage
   | NavigateToMessage
   | NotificationReceivedMessage;
@@ -118,8 +101,6 @@ export class MessageUtils {
 export interface MessageTypeMap {
   [MessageType.STORE_STATE_REQUEST]: StoreStateRequestMessage;
   [MessageType.STORE_STATE_RESPONSE]: StoreStateResponseMessage;
-  [MessageType.HIERARCHICAL_STORE_REQUEST]: HierarchicalStoreRequestMessage;
-  [MessageType.HIERARCHICAL_STORE_RESPONSE]: HierarchicalStoreResponseMessage;
   [MessageType.STORE_ACTION]: StoreActionMessage;
   [MessageType.NAVIGATE_TO]: NavigateToMessage;
   [MessageType.NOTIFICATION_RECEIVED]: NotificationReceivedMessage;
@@ -164,20 +145,6 @@ export class MessageFactory {
       case MessageType.STORE_STATE_RESPONSE:
         return MessageFactory.createStoreResponse(
           payload as StoreDataResponsePayload,
-          options.correlationId || '',
-          options.source
-        ) as MessageTypeMap[T];
-
-      case MessageType.HIERARCHICAL_STORE_REQUEST:
-        return MessageFactory.createHierarchicalStoreRequest(
-          payload as HierarchicalStoreDataPayload,
-          options.source,
-          options.correlationId
-        ) as MessageTypeMap[T];
-
-      case MessageType.HIERARCHICAL_STORE_RESPONSE:
-        return MessageFactory.createHierarchicalStoreResponse(
-          payload as HierarchicalStoreDataResponsePayload,
           options.correlationId || '',
           options.source
         ) as MessageTypeMap[T];
@@ -247,48 +214,6 @@ export class MessageFactory {
     };
   }
 
-  // ============================================================================
-  // HIERARCHICAL STORE FACTORY METHODS
-  // ============================================================================
-
-  static createHierarchicalStoreRequest(
-    payload: HierarchicalStoreDataPayload,
-    source?: string,
-    correlationId?: string
-  ): HierarchicalStoreRequestMessage {
-    // Validation
-    if (!payload.targetMfe || !payload.feature || !payload.selectorPath) {
-      throw new Error('targetMfe, feature, and selectorPath are required for hierarchical store requests');
-    }
-
-    return {
-      type: MessageType.HIERARCHICAL_STORE_REQUEST,
-      payload,
-      source,
-      correlationId: correlationId || MessageUtils.generateCorrelationId(),
-      timestamp: new Date()
-    };
-  }
-
-  static createHierarchicalStoreResponse(
-    payload: HierarchicalStoreDataResponsePayload,
-    correlationId: string,
-    source?: string
-  ): HierarchicalStoreResponseMessage {
-    // Validation
-    if (!correlationId) {
-      throw new Error('correlationId is required for hierarchical response messages');
-    }
-
-    return {
-      type: MessageType.HIERARCHICAL_STORE_RESPONSE,
-      payload,
-      correlationId,
-      source,
-      timestamp: new Date()
-    };
-  }
-
   static createStoreAction(
     payload: StoreActionPayload,
     source?: string
@@ -329,6 +254,51 @@ export class MessageFactory {
       payload,
       source,
       correlationId: MessageUtils.generateCorrelationId(),
+      timestamp: new Date()
+    };
+  }
+
+  /**
+   * Create hierarchical store request for complex NgRx selectors
+   */
+  static createHierarchicalStoreRequest(
+    request: {
+      targetMfe: string;
+      feature: string;
+      selectorPath: string;
+      selectorParams?: { [key: string]: any };
+      timeout?: number;
+      useCache?: boolean;
+      cacheTtl?: number;
+    },
+    source?: string,
+    correlationId?: string
+  ): StoreStateRequestMessage {
+    // Validation
+    if (!request.targetMfe || !request.feature || !request.selectorPath) {
+      throw new Error('targetMfe, feature, and selectorPath are required for hierarchical store requests');
+    }
+
+    // Convert hierarchical request to StoreDataPayload format
+    const payload: StoreDataPayload = {
+      storeSlice: `${request.feature}.${request.selectorPath}`,
+      // Include hierarchical data in payload
+      hierarchical: {
+        targetMfe: request.targetMfe,
+        feature: request.feature,
+        selectorPath: request.selectorPath,
+        selectorParams: request.selectorParams,
+        timeout: request.timeout,
+        useCache: request.useCache,
+        cacheTtl: request.cacheTtl
+      }
+    };
+
+    return {
+      type: MessageType.STORE_STATE_REQUEST,
+      payload,
+      source,
+      correlationId: correlationId || MessageUtils.generateCorrelationId(),
       timestamp: new Date()
     };
   }

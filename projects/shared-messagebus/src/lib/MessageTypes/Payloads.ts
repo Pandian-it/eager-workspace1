@@ -1,29 +1,20 @@
 // Core payload interfaces for MFE communication
 export interface StoreDataPayload {
   storeSlice: string;
-}
-
-// Enhanced payload for hierarchical store requests
-export interface HierarchicalStoreDataPayload {
-  targetMfe: string;
-  feature: string;
-  selectorPath: string;
-  selectorParams?: { [key: string]: any };
+  // Support for hierarchical store requests
+  hierarchical?: {
+    targetMfe: string;
+    feature: string;
+    selectorPath: string;
+    selectorParams?: { [key: string]: any };
+    timeout?: number;
+    useCache?: boolean;
+    cacheTtl?: number;
+  };
 }
 
 export interface StoreDataResponsePayload {
   storeSlice: string;
-  data: any;
-  success?: boolean;
-  error?: string;
-}
-
-// Enhanced payload for hierarchical store responses
-export interface HierarchicalStoreDataResponsePayload {
-  targetMfe: string;
-  feature: string;
-  selectorPath: string;
-  selectorParams?: { [key: string]: any };
   data: any;
   success?: boolean;
   error?: string;
