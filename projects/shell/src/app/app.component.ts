@@ -1,6 +1,7 @@
 import { Component, OnInit  } from '@angular/core';
 import { VersionService } from '@shared-lib';
 import * as packageInfo from '../../package.json';
+import  {} from '@shared-ui';
 @Component({
   selector: 'app-root',
   templateUrl: './app.component.html',
