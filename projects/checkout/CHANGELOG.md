@@ -1,5 +1,12 @@
 # checkout
 
+## 2.0.5
+
+### Patch Changes
+
+- 9ad83c2: Auto-generated patch for affected projects
+- 9ad83c2: Auto-generated patch for affected projects
+
 ## 2.0.4
 
 ### Patch Changes

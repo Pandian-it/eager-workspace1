@@ -1,5 +1,13 @@
 # shared-ui
 
+## 0.0.6
+
+### Patch Changes
+
+- a79055b: Auto-generated patch for affected projects
+- 9ad83c2: Auto-generated patch for affected projects
+- 9ad83c2: Auto-generated patch for affected projects
+
 ## 0.0.5
 
 ### Patch Changes

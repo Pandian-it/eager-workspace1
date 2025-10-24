@@ -1,5 +1,11 @@
 # shell
 
+## 1.0.8
+
+### Patch Changes
+
+- 9ad83c2: Auto-generated patch for affected projects
+
 ## 1.0.7
 
 ### Patch Changes
