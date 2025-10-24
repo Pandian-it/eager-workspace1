@@ -4,7 +4,7 @@ import { Component } from '@angular/core';
   selector: 'lib-shared-ui',
   template: `
     <p>
-      shared-ui works!!!
+      shared-ui works!!
     </p>
   `,
   styles: ``
